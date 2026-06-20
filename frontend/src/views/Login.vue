@@ -3,9 +3,11 @@ import { ref } from 'vue'
 import { ElButton, ElInput, ElForm, ElFormItem, ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { loginApi, getMeApi } from '../api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
+const loading = ref(false)
 
 const form = ref({
   username: '',
@@ -13,19 +15,33 @@ const form = ref({
 })
 
 async function handleLogin() {
+  if (!form.value.username || !form.value.password) {
+    ElMessage.warning('请输入用户名和密码')
+    return
+  }
+  loading.value = true
   try {
-    // TODO: 阶段 3 实现真实登录
-    ElMessage.success('登录成功（演示）')
-    userStore.setToken('demo-token')
-    userStore.setUserInfo({
-      id: 1,
-      username: 'admin',
-      name: '系统管理员',
-      role: 'admin'
-    })
-    router.push('/admin')
-  } catch {
-    ElMessage.error('登录失败')
+    // 1. 登录获取 token
+    const res = await loginApi(form.value)
+    const token = res.data.access_token
+    userStore.setToken(token)
+
+    // 2. 获取用户信息
+    const meRes = await getMeApi()
+    userStore.setUserInfo(meRes.data)
+
+    ElMessage.success('登录成功')
+
+    // 3. 按角色跳转
+    const role = meRes.data.role
+    if (role === 'admin') router.push('/admin')
+    else if (role === 'teacher') router.push('/teacher')
+    else router.push('/student')
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail || e?.message || '登录失败'
+    ElMessage.error(msg)
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -46,7 +62,7 @@ async function handleLogin() {
             v-model="form.username"
             placeholder="用户名"
             size="large"
-            prefix-icon="User"
+            :disabled="loading"
           />
         </ElFormItem>
         <ElFormItem>
@@ -55,8 +71,9 @@ async function handleLogin() {
             type="password"
             placeholder="密码"
             size="large"
-            prefix-icon="Lock"
             show-password
+            :disabled="loading"
+            @keyup.enter="handleLogin"
           />
         </ElFormItem>
         <ElFormItem>
@@ -64,6 +81,7 @@ async function handleLogin() {
             type="primary"
             size="large"
             class="login-btn"
+            :loading="loading"
             @click="handleLogin"
           >
             登 录
@@ -83,36 +101,26 @@ async function handleLogin() {
   justify-content: center;
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-primary-light) 100%);
 }
-
 .login-card {
   width: 420px;
   padding: 48px 40px;
-  background: var(--color-bg-white);
+  background: var(--color-bg-content);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   text-align: center;
 }
-
 .login-title {
   font-size: var(--font-size-xxl);
   color: var(--color-primary);
   margin-bottom: 4px;
 }
-
 .login-subtitle {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   margin-bottom: 32px;
 }
-
-.login-form {
-  text-align: left;
-}
-
-.login-btn {
-  width: 100%;
-}
-
+.login-form { text-align: left; }
+.login-btn { width: 100%; }
 .login-hint {
   margin-top: 16px;
   font-size: var(--font-size-xs);
