@@ -1,10 +1,13 @@
 ﻿import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { UserInfo } from '../types'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref<string | null>(localStorage.getItem('token'))
-  const userInfo = ref<UserInfo | null>(null)
+
+  // 从 localStorage 恢复用户信息
+  const saved = localStorage.getItem('userInfo')
+  const userInfo = ref<UserInfo | null>(saved ? JSON.parse(saved) : null)
 
   function setToken(newToken: string | null) {
     token.value = newToken
@@ -17,6 +20,11 @@ export const useUserStore = defineStore('user', () => {
 
   function setUserInfo(info: UserInfo | null) {
     userInfo.value = info
+    if (info) {
+      localStorage.setItem('userInfo', JSON.stringify(info))
+    } else {
+      localStorage.removeItem('userInfo')
+    }
   }
 
   function logout() {
