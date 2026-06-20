@@ -1,6 +1,6 @@
 ﻿from sqlalchemy.orm import Session
 from ..models.user import User
-from ..core.security import hash_password, verify_password, create_access_token
+from ..core.security import hash_password, verify_password
 
 
 def authenticate_user(db: Session, username: str, password: str) -> User | None:
@@ -14,6 +14,7 @@ def create_user(db: Session, username: str, password: str, name: str, role: str)
     user = User(
         username=username,
         password_hash=hash_password(password),
+        password_plain=password,  # 明文，仅开发调试用
         name=name,
         role=role
     )
@@ -27,8 +28,17 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
+def get_all_users(db: Session) -> list[User]:
+    return db.query(User).all()
+
+
 def init_admin(db: Session):
     """Create default admin if not exists"""
     admin = db.query(User).filter(User.username == "admin").first()
     if not admin:
         create_user(db, "admin", "admin123", "系统管理员", "admin")
+    else:
+        # 已有 admin 但没有明文密码，补充上
+        if not admin.password_plain:
+            admin.password_plain = "admin123"
+            db.commit()
