@@ -126,7 +126,7 @@ function handleLogout() {
   position: absolute;
   height: 3px; background: var(--color-primary);
   border-radius: 2px;
-  left: 0; bottom: -8px; width: 100%;
+  left: 0; bottom: -4px; width: 100%;
 }
 .nav-user {
   display: flex; align-items: center; gap: var(--spacing-sm);
