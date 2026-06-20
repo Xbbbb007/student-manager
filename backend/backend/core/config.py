@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = True
 
-    # Database
-    DATABASE_URL: str = "sqlite:///./app.db"
+    # Database - MySQL
+    DATABASE_URL: str = "mysql+pymysql://root:123456@localhost:3306/student_manager"
 
     # JWT
     SECRET_KEY: str = "dev-secret-key-change-in-production"
