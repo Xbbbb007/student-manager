@@ -74,7 +74,7 @@ function handleLogout() { userStore.logout(); router.push('/login') }
 .nav-item { position: relative; }
 .nav-item a { text-decoration: none; color: var(--color-text-secondary); font-weight: 600; font-size: 15px; cursor: pointer; padding: 16px 0; display: inline-block; transition: color 0.2s; }
 .nav-item a:hover { color: var(--color-primary); }
-.active-nav { position: absolute; height: 3px; background: var(--color-primary); border-radius: 2px; left: 0; bottom: -2px; width: 100%; }
+.active-nav { position: absolute; height: 2px; background: var(--color-primary); border-radius: 2px; left: 0; bottom: 8px; width: 100%; }
 .nav-user { display: flex; align-items: center; gap: var(--spacing-sm); flex-shrink: 0; font-size: 13px; color: var(--color-text); }
 .main-content { flex: 1; overflow-y: auto; padding: var(--spacing-lg); background: var(--color-bg); }
 </style>

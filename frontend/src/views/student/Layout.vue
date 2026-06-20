@@ -124,9 +124,9 @@ function handleLogout() {
 .nav-item a:hover { color: var(--color-primary); }
 .active-nav {
   position: absolute;
-  height: 3px; background: var(--color-primary);
+  height: 2px; background: var(--color-primary);
   border-radius: 2px;
-  left: 0; bottom: -2px; width: 100%;
+  left: 0; bottom: 8px; width: 100%;
 }
 .nav-user {
   display: flex; align-items: center; gap: var(--spacing-sm);
