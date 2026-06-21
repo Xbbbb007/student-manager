@@ -14,7 +14,6 @@ export const routes: RouteRecordRaw[] = [
   },
   {
     path: '/student',
-    name: 'Student',
     component: () => import('../views/student/Layout.vue'),
     meta: { title: '学生端', role: 'student' },
     children: [
@@ -26,7 +25,6 @@ export const routes: RouteRecordRaw[] = [
   },
   {
     path: '/teacher',
-    name: 'Teacher',
     component: () => import('../views/teacher/Layout.vue'),
     meta: { title: '教师端', role: 'teacher' },
     children: [
@@ -38,7 +36,6 @@ export const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin',
-    name: 'Admin',
     component: () => import('../views/admin/Layout.vue'),
     meta: { title: '管理端', role: 'admin' },
     children: [

@@ -1,6 +1,5 @@
 ﻿from pydantic import BaseModel, Field
 from typing import Optional
-from ..models.user import UserRole
 
 
 class LoginRequest(BaseModel):
@@ -13,11 +12,21 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
-class UserInfo(BaseModel):
+class StaffInfo(BaseModel):
     id: int
     username: str
     name: str
-    role: UserRole
+    role: str  # "teacher" | "admin"
+
+    class Config:
+        from_attributes = True
+
+
+class StudentInfo(BaseModel):
+    id: int
+    username: str
+    name: str
+    role: str = "student"
 
     class Config:
         from_attributes = True

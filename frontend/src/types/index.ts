@@ -2,7 +2,8 @@
   id: number
   username: string
   name: string
-  role: 'student' | 'teacher' | 'admin'
+  role: string  // "student" | "teacher" | "admin"
+  user_type?: string  // "staff" | "student"
 }
 
 export interface ApiResponse<T = unknown> {
