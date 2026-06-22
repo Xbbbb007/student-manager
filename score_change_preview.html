@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学业成绩多维分析图表</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        /* 面积折线多边形平滑过渡 */
+        .slanted-polygon {
+            transition: points 0.4s cubic-bezier(0.4, 0, 0.2, 1), fill 0.3s ease;
+        }
+
+        /* 气泡提示平滑移动 */
+        .tooltip-container {
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
+        }
+
+        /* 去除标准下拉菜单的默认箭头以适配自定义极简胶囊设计 */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-200/80 p-6 md:p-8 relative overflow-hidden">
+        
+        <!-- 图表头部：纯文字设计 + 胶囊下拉框 -->
+        <div class="flex items-center justify-between gap-4 mb-10">
+            <h2 class="text-xl font-bold text-slate-900 tracking-tight">
+                学业成绩
+            </h2>
+            
+            <!-- 胶囊样式下拉选择框 (完美复刻 image_32faf7.png) -->
+            <div class="relative inline-block text-left">
+                <select id="modeSelect" onchange="changeDisplayMode(this.value)" class="bg-slate-100/80 hover:bg-slate-200/60 text-slate-500 font-semibold text-xs py-2 px-6 pr-10 rounded-full border-none cursor-pointer transition-colors focus:outline-none tracking-wide text-center">
+                    <option value="grades">分数变化</option>
+                    <option value="classRank">班级排名</option>
+                    <option value="schoolRank">校排名变化</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
+                    <svg class="h-3.5 w-3.5 stroke-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative w-full h-[320px] flex border-b border-slate-100 mt-12 mb-4">
+            
+            <!-- 语文通道 -->
+            <div onmousemove="handleHover(event, 'chinese')" onmouseleave="handleLeave('chinese')" class="flex-1 flex flex-col justify-between relative group cursor-pointer border-r border-dashed border-slate-300 last:border-r-0">
+                <div class="px-2 z-10 pointer-events-none">
+                    <div class="text-sm font-bold text-slate-800">语文</div>
+                    <div class="text-base font-extrabold text-slate-900 mt-1" id="desc-chinese">--</div>
+                </div>
+                <div class="relative w-full h-56 flex items-end">
+                    <svg class="w-full h-full" id="svg-chinese" preserveAspectRatio="none">
+                        <polygon id="poly-chinese" points="0,224 0,224 100,224 100,224" class="slanted-polygon"></polygon>
+                    </svg>
+                    <!-- 动态感应提示框 -->
+                    <div id="tooltip-chinese" class="tooltip-container absolute pointer-events-none opacity-0 select-none">
+                        <div class="relative">
+                            <div class="absolute -left-1.5 -top-1.5 w-3.5 h-3.5 bg-white border-2 border-slate-900 rounded-full flex items-center justify-center z-20">
+                                <div class="w-1.5 h-1.5 rounded-full" style="background-color: rgb(96, 227, 244);"></div>
+                            </div>
+                            <div class="absolute left-3 -top-[13px] bg-slate-950 text-white text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap z-30 shadow-lg shadow-black/20 flex items-center gap-1.5">
+                                <span id="label-unit-chinese"></span>
+                                <span id="tooltip-val-chinese" class="text-cyan-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数学通道 -->
+            <div onmousemove="handleHover(event, 'math')" onmouseleave="handleLeave('math')" class="flex-1 flex flex-col justify-between relative group cursor-pointer border-r border-dashed border-slate-300 last:border-r-0">
+                <div class="px-2 z-10 pointer-events-none">
+                    <div class="text-sm font-bold text-slate-800">数学</div>
+                    <div class="text-base font-extrabold text-slate-900 mt-1" id="desc-math">--</div>
+                </div>
+                <div class="relative w-full h-56 flex items-end">
+                    <svg class="w-full h-full" id="svg-math" preserveAspectRatio="none">
+                        <polygon id="poly-math" points="0,224 0,224 100,224 100,224" class="slanted-polygon"></polygon>
+                    </svg>
+                    <div id="tooltip-math" class="tooltip-container absolute pointer-events-none opacity-0 select-none">
+                        <div class="relative">
+                            <div class="absolute -left-1.5 -top-1.5 w-3.5 h-3.5 bg-white border-2 border-slate-900 rounded-full flex items-center justify-center z-20">
+                                <div class="w-1.5 h-1.5 rounded-full" style="background-color: rgb(96, 227, 244);"></div>
+                            </div>
+                            <div class="absolute left-3 -top-[13px] bg-slate-950 text-white text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap z-30 shadow-lg shadow-black/20 flex items-center gap-1.5">
+                                <span id="label-unit-math"></span>
+                                <span id="tooltip-val-math" class="text-cyan-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 英语通道 -->
+            <div onmousemove="handleHover(event, 'english')" onmouseleave="handleLeave('english')" class="flex-1 flex flex-col justify-between relative group cursor-pointer border-r border-dashed border-slate-300 last:border-r-0">
+                <div class="px-2 z-10 pointer-events-none">
+                    <div class="text-sm font-bold text-slate-800">英语</div>
+                    <div class="text-base font-extrabold text-slate-900 mt-1" id="desc-english">--</div>
+                </div>
+                <div class="relative w-full h-56 flex items-end">
+                    <svg class="w-full h-full" id="svg-english" preserveAspectRatio="none">
+                        <polygon id="poly-english" points="0,224 0,224 100,224 100,224" class="slanted-polygon"></polygon>
+                    </svg>
+                    <div id="tooltip-english" class="tooltip-container absolute pointer-events-none opacity-0 select-none">
+                        <div class="relative">
+                            <div class="absolute -left-1.5 -top-1.5 w-3.5 h-3.5 bg-white border-2 border-slate-900 rounded-full flex items-center justify-center z-20">
+                                <div class="w-1.5 h-1.5 rounded-full" style="background-color: rgb(96, 227, 244);"></div>
+                            </div>
+                            <div class="absolute left-3 -top-[13px] bg-slate-950 text-white text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap z-30 shadow-lg shadow-black/20 flex items-center gap-1.5">
+                                <span id="label-unit-english"></span>
+                                <span id="tooltip-val-english" class="text-cyan-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 道德与法治通道 -->
+            <div onmousemove="handleHover(event, 'ethics')" onmouseleave="handleLeave('ethics')" class="flex-1 flex flex-col justify-between relative group cursor-pointer border-r border-dashed border-slate-300 last:border-r-0">
+                <div class="px-2 z-10 pointer-events-none">
+                    <div class="text-sm font-bold text-slate-800">道德与法治</div>
+                    <div class="text-base font-extrabold text-slate-900 mt-1" id="desc-ethics">--</div>
+                </div>
+                <div class="relative w-full h-56 flex items-end">
+                    <svg class="w-full h-full" id="svg-ethics" preserveAspectRatio="none">
+                        <polygon id="poly-ethics" points="0,224 0,224 100,224 100,224" class="slanted-polygon"></polygon>
+                    </svg>
+                    <div id="tooltip-ethics" class="tooltip-container absolute pointer-events-none opacity-0 select-none">
+                        <div class="relative">
+                            <div class="absolute -left-1.5 -top-1.5 w-3.5 h-3.5 bg-white border-2 border-slate-900 rounded-full flex items-center justify-center z-20">
+                                <div class="w-1.5 h-1.5 rounded-full" style="background-color: rgb(96, 227, 244);"></div>
+                            </div>
+                            <div class="absolute left-3 -top-[13px] bg-slate-950 text-white text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap z-30 shadow-lg shadow-black/20 flex items-center gap-1.5">
+                                <span id="label-unit-ethics"></span>
+                                <span id="tooltip-val-ethics" class="text-cyan-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 科学通道 -->
+            <div onmousemove="handleHover(event, 'science')" onmouseleave="handleLeave('science')" class="flex-1 flex flex-col justify-between relative group cursor-pointer border-r border-dashed border-slate-300 last:border-r-0">
+                <div class="px-2 z-10 pointer-events-none">
+                    <div class="text-sm font-bold text-slate-800">科学</div>
+                    <div class="text-base font-extrabold text-slate-900 mt-1" id="desc-science">--</div>
+                </div>
+                <div class="relative w-full h-56 flex items-end">
+                    <svg class="w-full h-full" id="svg-science" preserveAspectRatio="none">
+                        <polygon id="poly-science" points="0,224 0,224 100,224 100,224" class="slanted-polygon"></polygon>
+                    </svg>
+                    <div id="tooltip-science" class="tooltip-container absolute pointer-events-none opacity-0 select-none">
+                        <div class="relative">
+                            <div class="absolute -left-1.5 -top-1.5 w-3.5 h-3.5 bg-white border-2 border-slate-900 rounded-full flex items-center justify-center z-20">
+                                <div class="w-1.5 h-1.5 rounded-full" style="background-color: rgb(96, 227, 244);"></div>
+                            </div>
+                            <div class="absolute left-3 -top-[13px] bg-slate-950 text-white text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap z-30 shadow-lg shadow-black/20 flex items-center gap-1.5">
+                                <span id="label-unit-science"></span>
+                                <span id="tooltip-val-science" class="text-cyan-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 核心预载学业数据模型
+        const subjects = {
+            chinese: {
+                cn: "语文",
+                grades: { prev: 75, value: 85, max: 100, min: 0, unit: "分" },
+                classRank: { prev: 18, value: 8, max: 50, min: 1, unit: "名" },
+                schoolRank: { prev: 120, value: 65, max: 500, min: 1, unit: "名" }
+            },
+            math: {
+                cn: "数学",
+                grades: { prev: 95, value: 82, max: 100, min: 0, unit: "分" },
+                classRank: { prev: 3, value: 12, max: 50, min: 1, unit: "名" },
+                schoolRank: { prev: 15, value: 85, max: 500, min: 1, unit: "名" }
+            },
+            english: {
+                cn: "英语",
+                grades: { prev: 70, value: 90, max: 100, min: 0, unit: "分" },
+                classRank: { prev: 25, value: 5, max: 50, min: 1, unit: "名" },
+                schoolRank: { prev: 240, value: 58, max: 500, min: 1, unit: "名" }
+            },
+            ethics: {
+                cn: "道德与法治",
+                grades: { prev: 82, value: 88, max: 100, min: 0, unit: "分" },
+                classRank: { prev: 15, value: 10, max: 50, min: 1, unit: "名" },
+                schoolRank: { prev: 150, value: 92, max: 500, min: 1, unit: "名" }
+            },
+            science: {
+                cn: "科学",
+                grades: { prev: 92, value: 80, max: 100, min: 0, unit: "分" },
+                classRank: { prev: 8, value: 19, max: 50, min: 1, unit: "名" },
+                schoolRank: { prev: 42, value: 110, max: 500, min: 1, unit: "名" }
+            }
+        };
+
+        // 当前显示模式
+        let currentMode = 'grades'; 
+
+        // 颜色调色板定义 (浅色与深色切换)
+        const COLOR_LIGHT = "rgba(191, 245, 252, 0.75)"; // 浅色
+        const COLOR_DARK = "rgba(96, 227, 244, 0.95)";  // 深色
+
+        // 初始化
+        window.onload = function() {
+            renderAll();
+            window.addEventListener('resize', renderAll);
+        };
+
+        function renderSubject(key, isHovered = false) {
+            const subject = subjects[key];
+            const data = subject[currentMode];
+            const svg = document.getElementById(`svg-${key}`);
+            if (!svg) return;
+
+            const width = svg.clientWidth || svg.getBoundingClientRect().width || 100;
+            const height = svg.clientHeight || svg.getBoundingClientRect().height || 224;
+
+            let ratioLeft, ratioRight;
+
+            if (currentMode === 'grades') {
+                // 分数：值越高越好
+                ratioLeft = data.prev / data.max;
+                ratioRight = data.value / data.max;
+            } else {
+                // 排名：名次数值越小越优秀，采用逆向映射
+                ratioLeft = 0.1 + 0.8 * ((data.max - data.prev) / (data.max - 1));
+                ratioRight = 0.1 + 0.8 * ((data.max - data.value) / (data.max - 1));
+            }
+
+            // 计算左边和右边的SVG垂直高度坐标
+            const hLeft = Math.max(5, ratioLeft * (height * 0.85));
+            const hRight = Math.max(5, ratioRight * (height * 0.85));
+
+            // 生成多边形闭合坐标点
+            const p1 = `0,${height}`; 
+            const p2 = `0,${height - hLeft}`; 
+            const p3 = `${width},${height - hRight}`; 
+            const p4 = `${width},${height}`;
+
+            const polyElement = document.getElementById(`poly-${key}`);
+            if (polyElement) {
+                polyElement.setAttribute("points", `${p1} ${p2} ${p3} ${p4}`);
+                // 如果是当前悬停的主科目通道，则高亮渲染为深色，否则呈现默认浅色
+                polyElement.setAttribute("fill", isHovered ? COLOR_DARK : COLOR_LIGHT);
+            }
+
+            // 仅展示最近一次成绩 (如：语文 85分 / 8名)
+            const descLabel = document.getElementById(`desc-${key}`);
+            if (descLabel) {
+                descLabel.innerText = `${data.value}${data.unit}`;
+            }
+        }
+
+        // 渲染所有多边形通道
+        function renderAll() {
+            Object.keys(subjects).forEach(key => {
+                renderSubject(key, false);
+            });
+        }
+
+        function handleHover(event, key) {
+            const subject = subjects[key];
+            const data = subject[currentMode];
+            const container = event.currentTarget;
+            const svg = document.getElementById(`svg-${key}`);
+            const tooltip = document.getElementById(`tooltip-${key}`);
+            
+            if (!svg || !tooltip) return;
+
+            // 鼠标悬停时该通道颜色变深
+            renderSubject(key, true);
+
+            const rect = container.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left; // 鼠标相对该列容器的X轴相对位移
+            const colWidth = rect.width;
+
+            const svgHeight = svg.clientHeight || svg.getBoundingClientRect().height || 224;
+
+            let ratioLeft, ratioRight;
+
+            if (currentMode === 'grades') {
+                ratioLeft = data.prev / data.max;
+                ratioRight = data.value / data.max;
+            } else {
+                ratioLeft = 0.1 + 0.8 * ((data.max - data.prev) / (data.max - 1));
+                ratioRight = 0.1 + 0.8 * ((data.max - data.value) / (data.max - 1));
+            }
+
+            const hLeft = Math.max(5, ratioLeft * (svgHeight * 0.85));
+            const hRight = Math.max(5, ratioRight * (svgHeight * 0.85));
+
+            // 判断鼠标是靠近左半边还是右半边
+            const isNearLeft = mouseX < colWidth / 2;
+
+            let targetX, targetY, activeVal, labelPrefix;
+
+            if (isNearLeft) {
+                // 靠近左侧：显示上次成绩，Tooltip 移至左上角折点
+                targetX = 0;
+                targetY = svgHeight - hLeft;
+                activeVal = data.prev;
+                labelPrefix = "上次：";
+            } else {
+                // 靠近右侧：显示最新成绩，Tooltip 移至右上角折点
+                targetX = colWidth;
+                targetY = svgHeight - hRight;
+                activeVal = data.value;
+                labelPrefix = "最新：";
+            }
+
+            // 更新 Tooltip 位置并显示
+            tooltip.style.left = `${targetX}px`;
+            tooltip.style.top = `${targetY}px`;
+            tooltip.classList.remove('opacity-0');
+            tooltip.classList.add('opacity-100');
+
+            // 更新文字说明
+            const labelUnit = document.getElementById(`label-unit-${key}`);
+            if (labelUnit) {
+                labelUnit.innerText = labelPrefix;
+            }
+
+            const tooltipVal = document.getElementById(`tooltip-val-${key}`);
+            if (tooltipVal) {
+                tooltipVal.innerText = `${activeVal}${data.unit}`;
+            }
+        }
+
+        // 鼠标移出通道，气泡退场，颜色复原为浅色
+        function handleLeave(key) {
+            renderSubject(key, false);
+            const tooltip = document.getElementById(`tooltip-${key}`);
+            if (tooltip) {
+                tooltip.classList.remove('opacity-100');
+                tooltip.classList.add('opacity-0');
+            }
+        }
+
+        // 下拉菜单切换视图
+        function changeDisplayMode(mode) {
+            currentMode = mode;
+            renderAll();
+        }
+    </script>
+</body>
+</html>

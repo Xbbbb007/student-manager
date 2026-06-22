@@ -1,4 +1,4 @@
-﻿"""
+"""
 FastAPI 主入口 - 智慧学生管理系统后端
 """
 from contextlib import asynccontextmanager
@@ -10,6 +10,7 @@ from .database import engine, Base, SessionLocal
 from .routers.auth import router as auth_router
 from .routers.users import router as users_router
 from .routers.classes import router as classes_router
+from .routers.scores import router as scores_router
 from .services.auth import init_admin
 
 
@@ -41,6 +42,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(classes_router)
+app.include_router(scores_router)
 
 
 @app.get("/api/v1/health")

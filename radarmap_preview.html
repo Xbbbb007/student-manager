@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学业五维雷达分析评估</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        /* 雷达图多边形过渡 */
+        .radar-polygon {
+            transition: points 0.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease, fill 0.4s ease, stroke-width 0.3s ease;
+        }
+
+        /* 隐藏原生下拉框箭头并适配自定义药丸设计 */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <!-- 核心雷达评估卡片 -->
+    <div class="w-full max-w-xl bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/60 p-8 flex flex-col items-center justify-between relative">
+        
+        <!-- 卡片头部双药丸选择栏 -->
+        <div class="w-full flex justify-between items-center mb-8 gap-4">
+            
+            <!-- 左侧时段选择（完美复刻 image_32faf7.png 极简样式） -->
+            <div class="relative inline-block">
+                <select id="timeSelect" onchange="changeTimeMode(this.value)" class="bg-slate-100 hover:bg-slate-200/80 text-slate-600 font-semibold text-xs py-2.5 px-6 pr-10 rounded-full border-none cursor-pointer transition-all focus:outline-none tracking-wide text-center">
+                    <option value="latest">最新成绩</option>
+                    <option value="previous">上一次</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500">
+                    <svg class="h-3 w-3 stroke-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 右侧维度选择（完美复刻 image_32faf7.png 极简样式） -->
+            <div class="relative inline-block">
+                <select id="metricSelect" onchange="changeMetricMode(this.value)" class="bg-slate-100 hover:bg-slate-200/80 text-slate-600 font-semibold text-xs py-2.5 px-6 pr-10 rounded-full border-none cursor-pointer transition-all focus:outline-none tracking-wide text-center">
+                    <option value="grades">分数比例</option>
+                    <option value="schoolRank">校排名百分比</option>
+                    <option value="classRank">班级排名</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500">
+                    <svg class="h-3 w-3 stroke-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 雷达图容器 -->
+        <div class="relative w-full aspect-square max-w-[360px] flex items-center justify-center">
+            <svg class="w-full h-full" viewBox="0 0 360 360" id="radarSvg">
+                <!-- SVG内容由JS实时渲染 -->
+            </svg>
+            
+            <!-- 极简提示框（Hover显示具体数据，纯汉字文字描述） -->
+            <div id="radarTooltip" class="absolute pointer-events-none opacity-0 scale-95 transition-all duration-200 bg-slate-950 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-lg shadow-black/25 flex items-center gap-1.5 z-50">
+                <span id="tooltipSubject" class="text-slate-300 border-r border-slate-700 pr-1.5">科目</span>
+                <span id="tooltipValue" class="text-cyan-300">数据</span>
+            </div>
+        </div>
+
+        <!-- 极简底部署名 -->
+        <div class="w-full text-center mt-6">
+            <span class="text-[10px] tracking-wider text-slate-300 font-medium uppercase">Five-Dimensional Evaluation</span>
+        </div>
+
+    </div>
+
+    <script>
+        // 五科共享核心数据库 (涵盖真实考分、总分、班级排名及校排名百分比)
+        const subjects = {
+            chinese: {
+                cn: "语文",
+                grades: { prev: 105, value: 120, max: 150, desc: "分" },
+                classRank: { prev: 15, value: 8, max: 50, desc: "名" },
+                schoolRank: { prev: 25, value: 12, max: 100, desc: "%" } // 表示前 25% 和 前 12%
+            },
+            math: {
+                cn: "数学",
+                grades: { prev: 135, value: 127.5, max: 150, desc: "分" },
+                classRank: { prev: 4, value: 9, max: 50, desc: "名" },
+                schoolRank: { prev: 5, value: 15, max: 100, desc: "%" }
+            },
+            english: {
+                cn: "英语",
+                grades: { prev: 112.5, value: 135, max: 150, desc: "分" },
+                classRank: { prev: 12, value: 5, max: 50, desc: "名" },
+                schoolRank: { prev: 18, value: 8, max: 100, desc: "%" }
+            },
+            ethics: {
+                cn: "道德与法治",
+                grades: { prev: 75, value: 85, max: 100, desc: "分" },
+                classRank: { prev: 18, value: 10, max: 50, desc: "名" },
+                schoolRank: { prev: 20, value: 12, max: 100, desc: "%" }
+            },
+            science: {
+                cn: "科学",
+                grades: { prev: 90, value: 80, max: 100, desc: "分" },
+                classRank: { prev: 5, value: 14, max: 50, desc: "名" },
+                schoolRank: { prev: 8, value: 22, max: 100, desc: "%" }
+            }
+        };
+
+        // 当前图表设置
+        let currentTimeMode = 'latest';    // "latest"(最新成绩) | "previous"(上一次)
+        let currentMetricMode = 'grades';  // "grades"(分数比例) | "schoolRank"(校排名) | "classRank"(班级排名)
+
+        // 色值定义 (按要求提供 191, 245, 252 浅色 和 96, 227, 244 深色)
+        const COLOR_BRIGHT_FILL = "rgba(96, 227, 244, 0.4)";
+        const COLOR_BRIGHT_STROKE = "rgb(96, 227, 244)";
+        
+        const COLOR_DIM_FILL = "rgba(191, 245, 252, 0.1)";
+        const COLOR_DIM_STROKE = "rgba(191, 245, 252, 0.6)";
+
+        window.onload = function() {
+            renderRadar();
+            window.addEventListener('resize', renderRadar);
+        };
+
+        // 统一切换时段（最新成绩与上一次的变亮变暗转换）
+        function changeTimeMode(val) {
+            currentTimeMode = val;
+            renderRadar();
+        }
+
+        // 统一切换指标（分数比例、校名次百分比、班名次）
+        function changeMetricMode(val) {
+            currentMetricMode = val;
+            renderRadar();
+        }
+
+        // 核心渲染函数
+        function renderRadar() {
+            const svg = document.getElementById('radarSvg');
+            if (!svg) return;
+
+            const width = 360;
+            const height = 360;
+            const cx = width / 2;
+            const cy = height / 2;
+            const rMax = 110; // 外环半径
+
+            const keys = Object.keys(subjects);
+            const totalAxes = keys.length;
+            const angleOffset = -Math.PI / 2; // 顶部对齐
+
+            // 根据极坐标换算平面坐标
+            function getCoords(index, radius) {
+                const angle = angleOffset + (index * (2 * Math.PI / totalAxes));
+                return {
+                    x: cx + radius * Math.cos(angle),
+                    y: cy + radius * Math.sin(angle)
+                };
+            }
+
+            // 计算比例：越大越靠外
+            function getMetricRatio(data) {
+                if (currentMetricMode === 'grades') {
+                    // 分数占总结分数的百分之多少
+                    return data.value / data.max;
+                } else if (currentMetricMode === 'classRank') {
+                    // 班级排名：名次越小（比如第1名）越优秀，反向映射
+                    return 0.15 + 0.8 * ((data.max - data.value) / (data.max - 1));
+                } else if (currentMetricMode === 'schoolRank') {
+                    // 校排名百分比：百分比越小（比如前1%）越优秀，反向映射
+                    return 0.15 + 0.8 * ((100 - data.value) / 100);
+                }
+                return 0.5;
+            }
+
+            function getPrevMetricRatio(data) {
+                if (currentMetricMode === 'grades') {
+                    return data.prev / data.max;
+                } else if (currentMetricMode === 'classRank') {
+                    return 0.15 + 0.8 * ((data.max - data.prev) / (data.max - 1));
+                } else if (currentMetricMode === 'schoolRank') {
+                    return 0.15 + 0.8 * ((100 - data.prev) / 100);
+                }
+                return 0.5;
+            }
+
+            let svgContent = '';
+
+            // 1. 绘制极度轻量的背景同心网格
+            const gridLevels = 5;
+            for (let i = 1; i <= gridLevels; i++) {
+                const rCurrent = (i / gridLevels) * rMax;
+                let gridPoints = [];
+                for (let j = 0; j < totalAxes; j++) {
+                    const pt = getCoords(j, rCurrent);
+                    gridPoints.push(`${pt.x},${pt.y}`);
+                }
+                svgContent += `<polygon points="${gridPoints.join(' ')}" fill="none" stroke="#f1f5f9" stroke-width="1.5" />`;
+            }
+
+            // 2. 绘制经度轴线与纯文字标签（移除一切多余装饰符号）
+            for (let j = 0; j < totalAxes; j++) {
+                const outerPt = getCoords(j, rMax);
+                svgContent += `<line x1="${cx}" y1="${cy}" x2="${outerPt.x}" y2="${outerPt.y}" stroke="#f1f5f9" stroke-width="1.5" />`;
+                
+                const labelPt = getCoords(j, rMax + 24);
+                let textAnchor = "middle";
+                if (labelPt.x > cx + 15) textAnchor = "start";
+                else if (labelPt.x < cx - 15) textAnchor = "end";
+
+                svgContent += `<text x="${labelPt.x}" y="${labelPt.y + 4}" fill="#64748b" font-size="11" font-weight="600" text-anchor="${textAnchor}">${subjects[keys[j]].cn}</text>`;
+            }
+
+            // 3. 计算两组轨迹数据点
+            let prevPoints = [];
+            let latestPoints = [];
+
+            keys.forEach((key, j) => {
+                const subject = subjects[key];
+                const modeData = subject[currentMetricMode];
+
+                const ratioPrev = getPrevMetricRatio(modeData);
+                const ratioLatest = getMetricRatio(modeData);
+
+                const ptPrev = getCoords(j, ratioPrev * rMax);
+                const ptLatest = getCoords(j, ratioLatest * rMax);
+
+                prevPoints.push(`${ptPrev.x},${ptPrev.y}`);
+                latestPoints.push(`${ptLatest.x},${ptLatest.y}`);
+            });
+
+            // 4. 时段控制亮暗转换样式规则
+            const prevIsActive = (currentTimeMode === 'previous');
+            
+            const prevFill = prevIsActive ? COLOR_BRIGHT_FILL : COLOR_DIM_FILL;
+            const prevStroke = prevIsActive ? COLOR_BRIGHT_STROKE : COLOR_DIM_STROKE;
+            const prevStrokeWidth = prevIsActive ? 3 : 1.5;
+            const prevDash = prevIsActive ? "none" : "3,3";
+
+            const latestFill = prevIsActive ? COLOR_DIM_FILL : COLOR_BRIGHT_FILL;
+            const latestStroke = prevIsActive ? COLOR_DIM_STROKE : COLOR_BRIGHT_STROKE;
+            const latestStrokeWidth = prevIsActive ? 1.5 : 3;
+            const latestDash = prevIsActive ? "3,3" : "none";
+
+            // 5. 绘制上一次与最新一次的多边形区域
+            svgContent += `<polygon points="${prevPoints.join(' ')}" fill="${prevFill}" stroke="${prevStroke}" stroke-width="${prevStrokeWidth}" stroke-dasharray="${prevDash}" class="radar-polygon" />`;
+            svgContent += `<polygon points="${latestPoints.join(' ')}" fill="${latestFill}" stroke="${latestStroke}" stroke-width="${latestStrokeWidth}" stroke-dasharray="${latestDash}" class="radar-polygon" />`;
+
+            // 6. 数据轴点和极简无干扰热区绘制
+            keys.forEach((key, j) => {
+                const subject = subjects[key];
+                const modeData = subject[currentMetricMode];
+
+                const ratioPrev = getPrevMetricRatio(modeData);
+                const ratioLatest = getMetricRatio(modeData);
+
+                const ptPrev = getCoords(j, ratioPrev * rMax);
+                const ptLatest = getCoords(j, ratioLatest * rMax);
+
+                // 节点颜色（谁亮谁呈现深色，暗者呈现浅色）
+                const prevPointColor = prevIsActive ? COLOR_BRIGHT_STROKE : COLOR_DIM_STROKE;
+                const latestPointColor = prevIsActive ? COLOR_DIM_STROKE : COLOR_BRIGHT_STROKE;
+
+                // 绘制“上次”节点
+                svgContent += `<circle cx="${ptPrev.x}" cy="${ptPrev.y}" r="${prevIsActive ? 4 : 3}" fill="#ffffff" stroke="${prevPointColor}" stroke-width="2.5" class="transition-all" />`;
+                // 绘制“最新”节点
+                svgContent += `<circle cx="${ptLatest.x}" cy="${ptLatest.y}" r="${prevIsActive ? 3 : 4}" fill="#ffffff" stroke="${latestPointColor}" stroke-width="2.5" class="transition-all" />`;
+
+                // 绘制交互感应热区（在周围包裹一层透明透明大圆）
+                svgContent += `
+                    <circle cx="${ptLatest.x}" cy="${ptLatest.y}" r="15" fill="transparent" class="cursor-pointer" 
+                        onmouseover="showInteractiveTooltip(event, '${key}', 'latest')" 
+                        onmouseout="hideInteractiveTooltip()" />
+                    <circle cx="${ptPrev.x}" cy="${ptPrev.y}" r="15" fill="transparent" class="cursor-pointer" 
+                        onmouseover="showInteractiveTooltip(event, '${key}', 'previous')" 
+                        onmouseout="hideInteractiveTooltip()" />
+                `;
+            });
+
+            svg.innerHTML = svgContent;
+        }
+
+        // 鼠标悬停事件，显示文字框提示
+        function showInteractiveTooltip(event, key, timeState) {
+            const tooltip = document.getElementById('radarTooltip');
+            const tooltipSubject = document.getElementById('tooltipSubject');
+            const tooltipValue = document.getElementById('tooltipValue');
+            
+            if (!tooltip || !tooltipSubject || !tooltipValue) return;
+
+            const subject = subjects[key];
+            const data = subject[currentMetricMode];
+            const cnName = subject.cn;
+
+            let timeLabel = (timeState === 'previous') ? "上一次" : "最新";
+            let displayVal = '';
+
+            // 按对应指标生成描述（无符号，纯中文字词和分数占比）
+            if (currentMetricMode === 'grades') {
+                const rawScore = (timeState === 'previous') ? data.prev : data.value;
+                const pct = Math.round((rawScore / data.max) * 100);
+                displayVal = `${timeLabel} ${rawScore}分 占总分百分之 ${pct}`;
+            } else if (currentMetricMode === 'classRank') {
+                const rank = (timeState === 'previous') ? data.prev : data.value;
+                displayVal = `${timeLabel} 班级第 ${rank}名`;
+            } else if (currentMetricMode === 'schoolRank') {
+                const pctRank = (timeState === 'previous') ? data.prev : data.value;
+                displayVal = `${timeLabel} 年级前百分之 ${pctRank}`;
+            }
+
+            tooltipSubject.innerText = cnName;
+            tooltipValue.innerText = displayVal;
+
+            // 气泡定位
+            const svgRect = document.getElementById('radarSvg').getBoundingClientRect();
+            const posX = event.clientX - svgRect.left;
+            const posY = event.clientY - svgRect.top;
+
+            tooltip.style.left = `${posX}px`;
+            tooltip.style.top = `${posY - 35}px`;
+
+            tooltip.classList.remove('opacity-0', 'scale-95');
+            tooltip.classList.add('opacity-100', 'scale-100');
+        }
+
+        function hideInteractiveTooltip() {
+            const tooltip = document.getElementById('radarTooltip');
+            if (tooltip) {
+                tooltip.classList.remove('opacity-100', 'scale-100');
+                tooltip.classList.add('opacity-0', 'scale-95');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -133,7 +133,7 @@ const popover = ref<{
 }>({ action: null, user: null, value: "" });
 const popInput = ref<HTMLInputElement | null>(null);
 
-function openPop(e: Event, action: "edit" | "reset" | "delete", u: UserRecord) {
+function openPop(action: "edit" | "reset" | "delete", u: UserRecord) {
   popover.value = { action, user: u, value: action === "edit" ? u.name : "" };
   if (action === "edit")
     nextTick(() => {
@@ -176,12 +176,12 @@ async function handleAdd() {
   }
   try {
     if (activeView.value === "staff")
-      await createUserApi({ ...form.value, role: form.value.role });
+      await createUserApi({ ...form.value, role: form.value.role, class_id: form.value.class_id ?? undefined });
     else
       await createUserApi({
         ...form.value,
         role: "student",
-        class_id: form.value.class_id,
+        class_id: form.value.class_id ?? undefined,
       });
     ElMessage.success("创建成功");
     showAddModal.value = false;

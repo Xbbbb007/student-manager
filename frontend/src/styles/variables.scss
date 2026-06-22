@@ -1,5 +1,5 @@
-﻿// 智慧学生管理系统 - 设计 Token
-// 配色方案：东方青蓝
+// 智慧学生管理系统 - 设计 Token
+// 配色方案：冷白中性（主色藏蓝 + 纯白/中性灰底色）
 // 参考 docs/design-system.md 查看完整规范
 
 :root {
@@ -9,14 +9,14 @@
   --color-primary-light:  #7096D1;  // China
 
   /* ========== 背景色 ========== */
-  --color-bg:             #EDF1F6;  // Porcelain - 页面背景
-  --color-bg-card:        #F7F2EB;  // Moon - 卡片背景
-  --color-bg-content:     #FFF9F0;  // Jicama - 内容区背景
+  --color-bg:             #F9FAFB;  // 冷灰白 - 页面背景
+  --color-bg-card:        #FFFFFF;  // 纯白 - 卡片背景
+  --color-bg-content:     #FFFFFF;  // 纯白 - 内容区背景
   --color-bg-white:       #FFFFFF;  // 纯白
 
   /* ========== 边框与分割线 ========== */
-  --color-border:         #BAD6EB;  // Sky
-  --color-border-light:   #D0E3FF;  // Dawn
+  --color-border:         #E5E7EB;  // 中性灰 - 主边框
+  --color-border-light:   #F3F4F6;  // 浅灰 - 轻边框
 
   /* ========== 功能色 ========== */
   --color-success:        #10B981;
@@ -30,7 +30,7 @@
   --color-text-light:     #9CA3AF;
 
   /* ========== 字体 ========== */
-  --font-family:          system-ui, "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-family:          "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono:            "Cascadia Code", "JetBrains Mono", monospace;
   --font-size-xs:         12px;
   --font-size-sm:         13px;
@@ -90,6 +90,6 @@ a {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #D1D5DB;
   border-radius: 3px;
 }

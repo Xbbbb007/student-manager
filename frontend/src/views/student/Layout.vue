@@ -285,6 +285,6 @@ provide('onBackToHome', (cb: () => void) => {
 }
 .main-content {
   flex: 1; overflow-y: auto;
-  background: var(--color-bg);
+  background: var(--color-bg-white);
 }
 </style>

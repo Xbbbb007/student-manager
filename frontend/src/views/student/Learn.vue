@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, nextTick } from "vue"
 import gsap from "gsap"
+import Scores from "./Scores.vue"
 
 const activeTab = ref("")
 const quoteVisible = ref(true)
@@ -9,7 +10,7 @@ const isEntered = ref(false)
 const detailHTML = ref("")
 
 const enterModuleMode = inject<(tab: string) => void>('enterModuleMode', () => {})
-const exitModuleMode = inject<() => void>('exitModuleMode', () => {})
+
 const registerModuleTabChange = inject<(cb: (tab: string) => void) => void>('onModuleTabChange', () => {})
 const registerBackToHome = inject<(cb: () => void) => void>('onBackToHome', () => {})
 
@@ -68,7 +69,7 @@ function goBack() {
         { minHeight: 0, height: 0, padding: 0, overflow: "hidden" },
         { minHeight: "calc(100vh - 56px)", height: "calc(100vh - 56px)", padding: "0 60px 20px", overflow: "visible", duration: 0.5, ease: "power3.out" }
       )
-      gsap.fromTo("#unifiedGrid", { y: 0, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 }, "-=0.3")
+      gsap.fromTo("#unifiedGrid", { y: 0, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4 })
     })
   })
 }
@@ -113,19 +114,19 @@ onMounted(() => {
   <div class="learn-page">
     <div v-if="quoteVisible" id="heroSection" class="hero">
       <div id="unifiedGrid" class="unified-grid">
-        <div class="quote-cell" @click="toggleFlip">
+        <div class="quote-cell">
           <div :class="['flip-card', { flipped: isFlipped }]" id="flipCard">
             <div class="flip-front">
               <p class="quote-text" v-html="currentQuote.text"></p>
               <p class="quote-author">—— {{ currentQuote.author }}</p>
-              <p class="flip-hint">翻看介绍</p>
+              <p class="flip-hint" @click.stop="toggleFlip">翻看介绍</p>
             </div>
             <div class="flip-back">
               <div class="author-avatar">{{ currentQuote.author[0] }}</div>
               <p class="author-name">{{ currentQuote.author }}</p>
               <p class="author-era">{{ currentQuote.era }}</p>
               <p class="author-desc">{{ currentQuote.desc }}</p>
-              <p class="flip-hint">翻回名言</p>
+              <p class="flip-hint" @click.stop="toggleFlip">翻回名言</p>
             </div>
           </div>
         </div>
@@ -148,7 +149,8 @@ onMounted(() => {
 
     <div v-show="isEntered" class="detail-section">
       <div class="detail-body">
-        <div class="detail-content" v-html="detailHTML"></div>
+        <Scores v-if="activeTab === 'scores'" activeTab="scores" />
+        <div v-else class="detail-content" v-html="detailHTML"></div>
       </div>
     </div>
   </div>
@@ -158,7 +160,7 @@ onMounted(() => {
 /* ── Color overrides: warm palette + blue accents ── */
 .learn-page {
   min-height: calc(100vh - 56px);
-  --color-bg: #FAF7F5;
+  --color-bg: #FFFFFF;
   --color-bg-card: #FFFFFF;
   --color-border: #E5E7EB;
 }
@@ -174,15 +176,15 @@ onMounted(() => {
 .unified-grid {
   width: 100%;
   display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 1px; background: var(--color-border);
-  border: 1px solid var(--color-border); border-radius: 16px; overflow: hidden;
+  gap: 1px; background: #000000;
+  border: 1px solid #000000; overflow: hidden;
 }
 
 /* ── Quote cell ── */
 .quote-cell {
   grid-column: 1 / -1;
   background: var(--color-bg-card);
-  min-height: 320px; cursor: pointer; perspective: 1200px;
+  min-height: 320px; perspective: 1200px;
 }
 .flip-card {
   width: 100%; height: 100%; position: relative;
@@ -206,7 +208,7 @@ onMounted(() => {
 }
 .flip-front .flip-hint, .flip-back .flip-hint {
   position: absolute; bottom: 20px; font-size: 11px; color: var(--color-text-light);
-  letter-spacing: 3px; animation: pulse 2s ease-in-out infinite;
+  letter-spacing: 3px; cursor: pointer; animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
 

@@ -15,3 +15,5 @@ class Subject(str, enum.Enum):
     CHINESE = "chinese"
     MATH = "math"
     ENGLISH = "english"
+    SCIENCE = "science"
+    ETHICS = "ethics"
