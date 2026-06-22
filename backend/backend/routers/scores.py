@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+﻿from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func as sql_func
 from typing import Optional, List
@@ -130,7 +130,8 @@ def get_class_ranking(
             Score.student_id,
             sql_func.sum(Score.score).label("total"),
         )
-        .filter(Score.exam_id == exam_id)
+        .join(Student, Student.id == Score.student_id)
+        .filter(Score.exam_id == exam_id, Student.class_id == current_user.class_id)
         .group_by(Score.student_id)
         .order_by(sql_func.sum(Score.score).desc())
         .all()
@@ -150,7 +151,8 @@ def get_class_ranking(
                 Score.student_id,
                 sql_func.sum(Score.score).label("total"),
             )
-            .filter(Score.exam_id == prev_exam.id)
+            .join(Student, Student.id == Score.student_id)
+            .filter(Score.exam_id == prev_exam.id, Student.class_id == current_user.class_id)
             .group_by(Score.student_id)
             .all()
         )
@@ -247,10 +249,15 @@ def get_score_trend(
 
     class_obj = db.query(Class).filter(Class.id == current_user.class_id).first()
 
+    latest_exam_id = exams[-1].id if exams else None
+
     return ApiResponse(data={
         **result,
         "student_id": current_user.id,
         "student_name": current_user.name,
         "student_no": current_user.username,
         "class_name": class_obj.name if class_obj else "",
+        "latest_exam_id": latest_exam_id,
     })
+
+

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from "vue";
 import { getScoreTrend, getClassRanking } from "../../api/scores";
 import Chart from "chart.js/auto";
@@ -289,6 +289,9 @@ function initMainChart() {
         },
       },
       animation: { duration: 800, easing: "easeOutQuart" },
+      transitions: {
+        active: { animation: { duration: 500, easing: "easeInOutCubic" } }
+      },
     },
   });
 }
@@ -296,7 +299,19 @@ function initMainChart() {
 function switchSubject(key: string) {
   currentMainKey.value = key;
   if (!mainChart) return;
-  mainChart.data.datasets = buildMainDatasets(key);
+
+  const rankData =
+    key === "total"
+      ? { classRank: classRank.value, schoolRank: schoolRank.value }
+      : {
+          classRank: subjectClassRanks.value[key] || [],
+          schoolRank: subjectSchoolRanks.value[key] || [],
+        };
+
+  mainChart.data.datasets[0].data = getBarData(key);
+  mainChart.data.datasets[0].label = key === "total" ? "总分" : subjectNames[key];
+  mainChart.data.datasets[1].data = rankData.classRank;
+  mainChart.data.datasets[2].data = rankData.schoolRank;
   mainChart.options.scales!.bar!.max = getBarMax(key);
   mainChart.update();
 }
@@ -377,7 +392,12 @@ function initRadarChart() {
           },
         },
       },
-      animation: { duration: 800, easing: "easeOutQuart" },
+      animation: { duration: 600, easing: "easeOutQuart" },
+      transitions: {
+        active: {
+          animation: { duration: 500, easing: "easeInOutCubic" }
+        }
+      },
     },
   });
 }
@@ -1138,3 +1158,5 @@ onMounted(async () => {
   }
 }
 </style>
+
+
