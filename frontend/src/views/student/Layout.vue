@@ -1,11 +1,8 @@
 ﻿<script setup lang="ts">
-import { ref, provide, nextTick } from 'vue'
+import { ref, provide, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import gsap from 'gsap'
-import { Flip } from 'gsap/Flip'
-
-gsap.registerPlugin(Flip)
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -52,8 +49,8 @@ function handleSelect(index: number) {
     moduleActiveTab.value = ''
     activeIndex.value = index
     nextTick(() => {
-      setActiveNavOnFirst()
       syncNavColors()
+      nextTick(() => updateActiveIndicator())
     })
     router.push(navItems.value[index].route)
     return
@@ -70,18 +67,8 @@ function handleSelect(index: number) {
     gsap.to(navLinks[index], { color: '#334EAC', duration: 0.15 })
   }
 
-  // GSAP Flip：把 active-nav DOM 移动到目标项
-  const activeNav = navListRef.value?.querySelector('.active-nav')
-  const targetItem = navListRef.value?.children[index] as HTMLElement
-  if (activeNav && targetItem) {
-    const state = Flip.getState(activeNav)
-    targetItem.appendChild(activeNav)
-    Flip.from(state, {
-      duration: 0.6,
-      ease: 'elastic.out(1, 0.5)',
-      absolute: true
-    })
-  }
+  // 滑动指示条跟随
+  updateActiveIndicator()
 
   router.push(navItems.value[index].route)
 }
@@ -90,27 +77,8 @@ function handleModuleSelect(tabId: string) {
   if (moduleActiveTab.value === tabId) return
   moduleActiveTab.value = tabId
 
-  const idx = moduleTabItems.findIndex(t => t.id === tabId)
-
-  // GSAP 颜色动画
-  const navLinks = navListRef.value?.querySelectorAll('.nav-item a')
-  if (navLinks && idx >= 0) {
-    gsap.to(navLinks, { color: '#6B7280', duration: 0.15 })
-    gsap.to(navLinks[idx], { color: '#334EAC', duration: 0.15 })
-  }
-
-  // GSAP Flip：滑动指示条
-  const activeNav = navListRef.value?.querySelector('.active-nav')
-  const targetItem = navListRef.value?.children[idx] as HTMLElement
-  if (activeNav && targetItem) {
-    const state = Flip.getState(activeNav)
-    targetItem.appendChild(activeNav)
-    Flip.from(state, {
-      duration: 0.6,
-      ease: 'elastic.out(1, 0.5)',
-      absolute: true
-    })
-  }
+  // 颜色更新（syncNavColors 会根据 moduleActiveTab 自动定位）
+  syncNavColors()
 
   if (onModuleTabChange) onModuleTabChange(tabId)
 }
@@ -122,35 +90,48 @@ function handleBackToHome() {
     moduleMode.value = false
     moduleActiveTab.value = ''
     nextTick(() => {
-      setActiveNavOnFirst()
       syncNavColors()
+      nextTick(() => updateActiveIndicator())
     })
   }, 260)
 }
 
 /* ── 内部辅助函数 ── */
 
-function setActiveNavOnFirst() {
-  nextTick(() => {
-    const firstItem = navListRef.value?.children[0] as HTMLElement
-    if (firstItem) {
-      let activeNav = navListRef.value?.querySelector('.active-nav')
-      if (!activeNav) {
-        activeNav = document.createElement('div')
-        activeNav.className = 'active-nav'
-      }
-      firstItem.appendChild(activeNav)
-    }
+function updateActiveIndicator() {
+  const navList = navListRef.value
+  if (!navList || !navList.isConnected) return
+
+  const activeTab = moduleMode.value ? moduleActiveTab.value : null
+  const activeIdx = moduleMode.value
+    ? moduleTabItems.findIndex(t => t.id === activeTab)
+    : activeIndex.value
+
+  const targetItem = navList.children[activeIdx] as HTMLElement
+  if (!targetItem) return
+
+  const listRect = navList.getBoundingClientRect()
+  const itemRect = targetItem.getBoundingClientRect()
+
+  gsap.to('.active-nav', {
+    left: itemRect.left - listRect.left,
+    width: itemRect.width,
+    duration: 0.5,
+    ease: 'elastic.out(1, 0.5)'
   })
 }
 
 function syncNavColors() {
   const navLinks = navListRef.value?.querySelectorAll('.nav-item a')
-  if (navLinks) {
-    navLinks.forEach((link, i) => {
-      gsap.set(link, { color: i === 0 ? '#334EAC' : '#6B7280' })
-    })
-  }
+  if (!navLinks) return
+
+  const activeIdx = moduleMode.value
+    ? moduleTabItems.findIndex(t => t.id === moduleActiveTab.value)
+    : activeIndex.value
+
+  navLinks.forEach((link, i) => {
+    gsap.set(link, { color: i === activeIdx ? '#334EAC' : '#6B7280' })
+  })
 }
 
 function handleLogout() {
@@ -164,16 +145,17 @@ provide('enterModuleMode', (tab: string) => {
   moduleActiveTab.value = tab
   if (onModuleTabChange) onModuleTabChange(tab)
   nextTick(() => {
-    setActiveNavOnFirst()
     syncNavColors()
+    // 等待模块导航 DOM 渲染完毕再定位指示条
+    nextTick(() => updateActiveIndicator())
   })
 })
 provide('exitModuleMode', () => {
   moduleMode.value = false
   moduleActiveTab.value = ''
   nextTick(() => {
-    setActiveNavOnFirst()
     syncNavColors()
+    nextTick(() => updateActiveIndicator())
   })
 })
 provide('onModuleTabChange', (cb: (tab: string) => void) => {
@@ -181,6 +163,18 @@ provide('onModuleTabChange', (cb: (tab: string) => void) => {
 })
 provide('onBackToHome', (cb: () => void) => {
   onBackToHome = cb
+})
+provide('onSelectModuleTab', (tabId: string) => {
+  handleModuleSelect(tabId)
+})
+
+/* ── 指示条 + 颜色跟随 active tab ── */
+watch([moduleActiveTab, moduleMode], () => {
+  if (!moduleMode.value) return
+  nextTick(() => {
+    syncNavColors()
+    updateActiveIndicator()
+  })
 })
 </script>
 
@@ -194,34 +188,36 @@ provide('onBackToHome', (cb: () => void) => {
         <button v-if="moduleMode" class="nav-back" @click="handleBackToHome">← 首页</button>
 
         <div class="nav-center">
-          <!-- 主导航 -->
-          <ul v-if="!moduleMode" class="nav-links" ref="navListRef" key="main">
-            <li
-              v-for="(item, index) in navItems"
-              :key="item.route"
-              class="nav-item"
-            >
-              <a
-                :class="{ active: activeIndex === index }"
-                @click.prevent="handleSelect(index)"
-              >{{ item.label }}</a>
-              <div v-if="index === 0" class="active-nav"></div>
-            </li>
-          </ul>
-          <!-- 模块标签 -->
-          <ul v-else class="nav-links" ref="navListRef" key="module">
-            <li
-              v-for="(item, index) in moduleTabItems"
-              :key="item.id"
-              class="nav-item"
-            >
-              <a
-                :class="{ active: moduleActiveTab === item.id }"
-                @click.prevent="handleModuleSelect(item.id)"
-              >{{ item.label }}</a>
-              <div v-if="index === 0" class="active-nav"></div>
-            </li>
-          </ul>
+          <div class="nav-links-wrapper">
+            <!-- 主导航 -->
+            <ul v-if="!moduleMode" class="nav-links" ref="navListRef" key="main">
+              <li
+                v-for="(item, index) in navItems"
+                :key="item.route"
+                class="nav-item"
+              >
+                <a
+                  :class="{ active: activeIndex === index }"
+                  @click.prevent="handleSelect(index)"
+                >{{ item.label }}</a>
+              </li>
+            </ul>
+            <!-- 模块标签 -->
+            <ul v-else class="nav-links" ref="navListRef" key="module">
+              <li
+                v-for="(item, index) in moduleTabItems"
+                :key="item.id"
+                class="nav-item"
+              >
+                <a
+                  :class="{ active: moduleActiveTab === item.id }"
+                  @click.prevent="handleModuleSelect(item.id)"
+                >{{ item.label }}</a>
+              </li>
+            </ul>
+            <!-- 滑动指示条：独立于 v-for，由 updateActiveIndicator() 定位 -->
+            <div class="active-nav"></div>
+          </div>
         </div>
 
         <div class="nav-user">
@@ -264,6 +260,7 @@ provide('onBackToHome', (cb: () => void) => {
 }
 .nav-back:hover { color: var(--color-text); }
 .nav-center { flex: 1; display: flex; justify-content: center; }
+.nav-links-wrapper { position: relative; }
 .nav-links { display: flex; list-style: none; gap: 2rem; align-items: center; }
 .nav-item { position: relative; }
 .nav-item a {
@@ -277,7 +274,8 @@ provide('onBackToHome', (cb: () => void) => {
   position: absolute;
   height: 2px; background: var(--color-primary);
   border-radius: 2px;
-  left: 0; bottom: 8px; width: 100%;
+  left: 0; bottom: 8px; width: 0;
+  pointer-events: none;
 }
 .nav-user {
   display: flex; align-items: center; gap: var(--spacing-sm);

@@ -111,6 +111,21 @@ function getBarMax(key: string) {
   return max - baseline + range * 0.3;
 }
 
+function getRankMax(values: (number | null)[]): number {
+  const valid = values.filter((v): v is number => v != null);
+  if (!valid.length) return 50;
+  const maxVal = Math.max(...valid);
+  // Round up to next multiple of 10 for clean tick marks
+  return Math.ceil(maxVal / 10) * 10;
+}
+
+function getRankStepSize(maxVal: number): number {
+  if (maxVal <= 20) return 5;
+  if (maxVal <= 50) return 10;
+  if (maxVal <= 100) return 20;
+  return 50;
+}
+
 function buildMainDatasets(key: string) {
   const rankData =
     key === "total"
@@ -256,10 +271,10 @@ function initMainChart() {
           },
           reverse: true,
           min: 0,
-          max: 50,
+          max: getRankMax(classRank.value),
           grid: { color: "rgba(148,163,184,0.08)", lineWidth: 1 },
           ticks: {
-            stepSize: 10,
+            stepSize: getRankStepSize(getRankMax(classRank.value)),
             padding: 8,
             color: "#334EAC",
             callback: (v: any) => (v > 0 ? v + "名" : ""),
@@ -277,10 +292,10 @@ function initMainChart() {
           },
           reverse: true,
           min: 0,
-          max: 160,
+          max: getRankMax(schoolRank.value),
           grid: { drawOnChartArea: false },
           ticks: {
-            stepSize: 40,
+            stepSize: getRankStepSize(getRankMax(schoolRank.value)),
             padding: 8,
             color: "#E8A838",
             callback: (v: any) => (v > 0 ? v + "名" : ""),
@@ -313,6 +328,15 @@ function switchSubject(key: string) {
   mainChart.data.datasets[1].data = rankData.classRank;
   mainChart.data.datasets[2].data = rankData.schoolRank;
   mainChart.options.scales!.bar!.max = getBarMax(key);
+
+  // 动态更新排名 Y 轴范围
+  const classMax = getRankMax(rankData.classRank);
+  const schoolMax = getRankMax(rankData.schoolRank);
+  mainChart.options.scales!.yLeft!.max = classMax;
+  mainChart.options.scales!.yLeft!.ticks!.stepSize = getRankStepSize(classMax);
+  mainChart.options.scales!.yRight!.max = schoolMax;
+  mainChart.options.scales!.yRight!.ticks!.stepSize = getRankStepSize(schoolMax);
+
   mainChart.update();
 }
 
@@ -444,14 +468,19 @@ onMounted(async () => {
       initMainChart();
       initRadarChart();
     });
+
+    const latestExamId = data.latest_exam_id;
+    if (latestExamId) {
+      try {
+        const rankRes: any = await getClassRanking(latestExamId);
+        rankingData.value = rankRes.data?.rankings || [];
+      } catch (e2) {
+        console.error("加载排名数据失败", e2);
+      }
+    }
   } catch (e) {
     console.error("加载成绩数据失败", e);
   }
-
-  try {
-    const res: any = await getClassRanking(1);
-    rankingData.value = res.data?.rankings || [];
-  } catch {}
 });
 </script>
 

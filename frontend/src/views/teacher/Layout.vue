@@ -1,44 +1,52 @@
-﻿<script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '../../stores/user'
-import gsap from 'gsap'
-import { Flip } from 'gsap/Flip'
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useUserStore } from "../../stores/user";
+import gsap from "gsap";
+import { Flip } from "gsap/Flip";
 
-gsap.registerPlugin(Flip)
+gsap.registerPlugin(Flip);
 
-const router = useRouter()
-const userStore = useUserStore()
-const navListRef = ref<HTMLElement | null>(null)
+const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
+const navListRef = ref<HTMLElement | null>(null);
 
 interface NavItem { label: string; route: string }
 const navItems = ref<NavItem[]>([
-  { label: '教学', route: '/teacher/teach' },
-  { label: '管理', route: '/teacher/manage' },
-  { label: '我的', route: '/teacher/profile' }
-])
-const activeIndex = ref(0)
+  { label: "教学", route: "/teacher/teach" },
+  { label: "成绩", route: "/teacher/scores" },
+  { label: "课表", route: "/teacher/schedule" },
+  { label: "管理", route: "/teacher/manage" },
+  { label: "我的", route: "/teacher/profile" },
+]);
+const activeIndex = ref(0);
 
 function handleSelect(index: number) {
-  if (index === activeIndex.value) return
-  activeIndex.value = index
-  
-  const navLinks = navListRef.value?.querySelectorAll('.nav-item a')
+  if (index === activeIndex.value) return;
+  activeIndex.value = index;
+
+  const navLinks = navListRef.value?.querySelectorAll(".nav-item a");
   if (navLinks) {
-    gsap.to(navLinks, { color: '#6B7280', duration: 0.15 })
-    gsap.to(navLinks[index], { color: '#334EAC', duration: 0.15 })
+    gsap.to(navLinks, { color: "#6B7280", duration: 0.15 });
+    gsap.to(navLinks[index], { color: "#334EAC", duration: 0.15 });
   }
-  const activeNav = navListRef.value?.querySelector('.active-nav')
-  const targetItem = navListRef.value?.children[index] as HTMLElement
+  const activeNav = navListRef.value?.querySelector(".active-nav");
+  const targetItem = navListRef.value?.children[index] as HTMLElement;
   if (activeNav && targetItem) {
-    const state = Flip.getState(activeNav)
-    targetItem.appendChild(activeNav)
-    Flip.from(state, { duration: 0.6, ease: 'elastic.out(1, 0.5)', absolute: true })
+    const state = Flip.getState(activeNav);
+    targetItem.appendChild(activeNav);
+    Flip.from(state, { duration: 0.6, ease: "elastic.out(1, 0.5)", absolute: true });
   }
-  router.push(navItems.value[index].route)
+  router.push(navItems.value[index].route);
 }
 
-function handleLogout() { userStore.logout(); router.push('/login') }
+function handleLogout() { userStore.logout(); router.push("/login"); }
+
+onMounted(() => {
+  const idx = navItems.value.findIndex((n) => route.path.startsWith(n.route));
+  if (idx >= 0) activeIndex.value = idx;
+});
 </script>
 
 <template>
@@ -55,7 +63,7 @@ function handleLogout() { userStore.logout(); router.push('/login') }
           </ul>
         </div>
         <div class="nav-user">
-          <span>{{ userStore.userInfo?.name || '教师' }}</span>
+          <span>{{ userStore.userInfo?.name || "教师" }}</span>
           <el-button text type="primary" @click="handleLogout">退出</el-button>
         </div>
       </div>

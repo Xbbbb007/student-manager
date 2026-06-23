@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成绩页面视觉原型 v2 — 图表与个人信息重新设计</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── 设计 Token（沿用项目变量，微调图表专用色） ── */
+:root {
+  --color-primary:        #334EAC;
+  --color-primary-dark:   #081F5C;
+  --color-primary-light:  #7096D1;
+  --color-bg:             #F9FAFB;
+  --color-bg-card:        #FFFFFF;
+  --color-border:         #E5E7EB;
+  --color-border-light:   #F3F4F6;
+  --color-success:        #10B981;
+  --color-warning:        #E8A838;
+  --color-danger:         #EF4444;
+  --color-text:           #1F2937;
+  --color-text-secondary: #6B7280;
+  --color-text-light:     #9CA3AF;
+  --font-family:          "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* 图表专用色 */
+  --chart-bar-from:   #334EAC;
+  --chart-bar-to:     #7096D1;
+  --chart-bar-hover:  #28429A;
+  --chart-line-class: #334EAC;
+  --chart-line-school:#D97B2C;
+  --chart-grid:       rgba(100,116,139,0.07);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 页面容器（模拟 Learn.vue 的 detail-body） ── */
+.page-wrap {
+  max-width: 1200px;
+  margin: 32px auto;
+  padding: 0 24px;
+}
+.detail-body {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 32px;
+}
+
+/* ═══════════════════════════════════════
+   第一行：图表 + 个人信息
+   ═══════════════════════════════════════ */
+.chart-profile-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+}
+.chart-card {
+  flex: 2;
+  min-width: 0;
+}
+.profile-card {
+  flex: 0 0 280px;
+  border-left: 1px solid var(--color-border-light);
+  padding-left: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── 图表头部 ── */
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.chart-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.5px;
+}
+.subject-select {
+  position: relative;
+}
+.subject-select select {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 6px 32px 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  appearance: none;
+  transition: all 0.2s;
+}
+.subject-select select:hover { border-color: var(--color-primary-light); }
+.subject-select select:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(51,78,172,0.08);
+}
+.subject-select .arrow {
+  pointer-events: none;
+  position: absolute;
+  top: 50%; right: 11px;
+  transform: translateY(-50%);
+  color: var(--color-text-light);
+}
+.subject-select .arrow svg { width: 14px; height: 14px; }
+
+/* ── 图表区域 ── */
+.chart-area {
+  height: 340px;
+  position: relative;
+}
+
+/* ── 图表底部图例（自定义） ── */
+.chart-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 14px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.legend-bar {
+  width: 14px; height: 10px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--chart-bar-from), var(--chart-bar-to));
+}
+.legend-line {
+  width: 18px; height: 3px;
+  border-radius: 2px;
+  position: relative;
+}
+.legend-line::after {
+  content: '';
+  position: absolute;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: inherit;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px currentColor;
+}
+.legend-line.class-rank { background: var(--chart-line-class); color: var(--chart-line-class); }
+.legend-line.school-rank { background: var(--chart-line-school); color: var(--chart-line-school); }
+
+/* ═══════════════════════════════════════
+   个人信息卡片（重新设计）
+   ═══════════════════════════════════════ */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.profile-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #334EAC, #7096D1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 1px;
+}
+.profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+.profile-meta {
+  font-size: 12px;
+  color: var(--color-text-light);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-meta .dot {
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--color-text-light);
+  opacity: 0.5;
+}
+
+/* ── 总分高亮 ── */
+.profile-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(51,78,172,0.04), rgba(112,150,209,0.06));
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(51,78,172,0.08);
+}
+.profile-total-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.profile-total-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.profile-total-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-light);
+}
+
+/* ── 各科成绩列表 ── */
+.subject-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.subject-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.subject-row:last-child { border-bottom: none; }
+.subject-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.subject-score {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.subject-score.high { color: var(--color-primary); }
+.subject-score.mid  { color: var(--color-text); }
+.subject-score.low  { color: var(--color-warning); }
+
+/* ── 各科小条形图 ── */
+.subject-bar-wrap {
+  flex: 1;
+  margin: 0 12px;
+  height: 4px;
+  background: var(--color-border-light);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.subject-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--chart-bar-from), var(--chart-bar-to));
+  transition: width 0.6s ease;
+}
+
+/* ═══════════════════════════════════════
+   第二行：雷达图 + 排名 + AI
+   ═══════════════════════════════════════ */
+.triple-columns {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+.content-left {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+/* ── 雷达图 ── */
+.radar-section { }
+.radar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+.radar-area {
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radar-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.radar-legend-item {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; user-select: none;
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── 排名 ── */
+.ranking-section { }
+.ranking-title {
+  font-size: 15px; font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+.ranking-list {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ranking-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 12px; border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: background 0.2s;
+}
+.ranking-item:hover { background: rgba(51,78,172,0.03); }
+.ranking-item.is-me {
+  background: rgba(51,78,172,0.05);
+  border-color: rgba(51,78,172,0.10);
+}
+.ranking-header {
+  padding: 0 8px 8px !important;
+  border-radius: 0 !important;
+  margin-bottom: 4px;
+}
+.ranking-header:hover { background: transparent !important; }
+.ranking-left, .ranking-right {
+  display: flex; align-items: center; gap: 0;
+}
+.ranking-right { padding-left: 14px; border-left: 1px solid var(--color-border-light); }
+.ranking-rank {
+  width: 26px; flex-shrink: 0;
+  font-size: 13px; font-weight: 700;
+  color: var(--color-text-light);
+}
+.is-me .ranking-rank { color: var(--color-primary); }
+.ranking-name {
+  min-width: 44px; flex: 1;
+  font-size: 13px; font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.is-me .ranking-name { color: var(--color-primary); font-weight: 700; }
+.ranking-rank-change {
+  width: 44px; flex-shrink: 0;
+  font-size: 10px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 1px;
+}
+.ranking-rank-change.up { color: var(--color-success); }
+.ranking-rank-change.down { color: var(--color-danger); }
+.ranking-rank-change.flat { color: var(--color-text-light); }
+.ranking-rank-change svg { width: 8px; height: 8px; }
+.ranking-score {
+  width: 50px; flex-shrink: 0;
+  font-size: 13px; font-weight: 700;
+  color: var(--color-text-secondary);
+}
+.is-me .ranking-score { color: var(--color-primary); }
+.ranking-change {
+  width: 44px; flex-shrink: 0;
+  font-size: 12px; font-weight: 700;
+}
+.ranking-change.up { color: var(--color-success); }
+.ranking-change.down { color: var(--color-danger); }
+.ranking-change.flat { color: var(--color-text-light); }
+
+/* ── AI 占位 ── */
+.ai-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border);
+  min-height: 320px;
+}
+.ai-placeholder-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; color: var(--color-text-light);
+}
+.ai-placeholder-inner svg { opacity: 0.4; }
+.ai-placeholder-text { font-size: 15px; font-weight: 700; color: var(--color-text-secondary); }
+.ai-placeholder-sub {
+  font-size: 12px; font-weight: 500;
+  color: var(--color-text-light);
+  background: var(--color-bg);
+  padding: 3px 12px; border-radius: 12px;
+}
+
+/* ═══════════════════════════════════════
+   详细表格
+   ═══════════════════════════════════════ */
+.detail-section { margin-bottom: 0; }
+.detail-title {
+  font-size: 15px; font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 18px;
+}
+.score-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.score-table thead th {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-weight: 600; font-size: 12px;
+  padding: 10px 14px; text-align: center;
+  border-bottom: 2px solid var(--color-border);
+  letter-spacing: 0.5px;
+}
+.score-table tbody td {
+  padding: 12px 14px; text-align: center;
+  border-bottom: 1px solid var(--color-border-light);
+  color: var(--color-text);
+}
+.score-table tbody tr:hover { background: rgba(51,78,172,0.02); }
+.score-table tbody tr:last-child td { border-bottom: none; }
+.score-up { color: var(--color-success); font-weight: 700; }
+.score-down { color: var(--color-danger); font-weight: 700; }
+.score-flat { color: var(--color-text-light); }
+.rank-badge {
+  display: inline-block; min-width: 28px;
+  padding: 2px 8px; border-radius: 12px;
+  font-size: 11px; font-weight: 700;
+}
+.rank-top { background: rgba(51,78,172,0.08); color: var(--color-primary); }
+.rank-mid { background: rgba(232,168,56,0.08); color: var(--color-warning); }
+.rank-low { background: rgba(239,68,68,0.06); color: var(--color-danger); }
+
+/* ── 动画 ── */
+.fade-in {
+  opacity: 0; transform: translateY(12px);
+  animation: fadeIn 0.5s ease forwards;
+}
+.fade-in:nth-child(1) { animation-delay: 0.05s; }
+.fade-in:nth-child(2) { animation-delay: 0.12s; }
+@keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 900px) {
+  .chart-profile-row { flex-direction: column; }
+  .profile-card {
+    flex: none; border-left: none;
+    border-top: 1px solid var(--color-border-light);
+    padding-left: 0; padding-top: 20px;
+  }
+  .triple-columns { grid-template-columns: 1fr; }
+  .content-left { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+<div class="detail-body">
+
+  <!-- ═══ 第一行：图表 + 个人信息 ═══ -->
+  <div class="chart-profile-row">
+    <!-- 主图表 -->
+    <div class="chart-card fade-in">
+      <div class="chart-header">
+        <div class="chart-title">成绩变化趋势</div>
+        <div class="subject-select">
+          <select id="subjectPicker">
+            <option value="total">总分</option>
+            <option value="chinese">语文</option>
+            <option value="math">数学</option>
+            <option value="english">英语</option>
+            <option value="science">科学</option>
+            <option value="ethics">道德与法治</option>
+          </select>
+          <div class="arrow">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="chart-area">
+        <canvas id="mainChart"></canvas>
+      </div>
+      <!-- 自定义图例 -->
+      <div class="chart-legend">
+        <div class="legend-item"><span class="legend-bar"></span>分数</div>
+        <div class="legend-item"><span class="legend-line class-rank"></span>班排名</div>
+        <div class="legend-item"><span class="legend-line school-rank"></span>校排名</div>
+      </div>
+    </div>
+
+    <!-- 个人信息（重新设计） -->
+    <div class="profile-card fade-in">
+      <div class="profile-header">
+        <div class="profile-avatar">谢</div>
+        <div>
+          <div class="profile-name">谢宇轩</div>
+          <div class="profile-meta">
+            <span>SS2401003</span>
+            <span class="dot"></span>
+            <span>三年级(1)班</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-total">
+        <span class="profile-total-label">总分</span>
+        <span class="profile-total-value">547</span>
+        <span class="profile-total-unit">分</span>
+      </div>
+
+      <div class="subject-list">
+        <div class="subject-row">
+          <span class="subject-label">语文</span>
+          <div class="subject-bar-wrap"><div class="subject-bar-fill" style="width:92%"></div></div>
+          <span class="subject-score high">92</span>
+        </div>
+        <div class="subject-row">
+          <span class="subject-label">数学</span>
+          <div class="subject-bar-wrap"><div class="subject-bar-fill" style="width:96%"></div></div>
+          <span class="subject-score high">96</span>
+        </div>
+        <div class="subject-row">
+          <span class="subject-label">英语</span>
+          <div class="subject-bar-wrap"><div class="subject-bar-fill" style="width:88%"></div></div>
+          <span class="subject-score mid">88</span>
+        </div>
+        <div class="subject-row">
+          <span class="subject-label">科学</span>
+          <div class="subject-bar-wrap"><div class="subject-bar-fill" style="width:91%"></div></div>
+          <span class="subject-score high">91</span>
+        </div>
+        <div class="subject-row">
+          <span class="subject-label">道德与法治</span>
+          <div class="subject-bar-wrap"><div class="subject-bar-fill" style="width:85%"></div></div>
+          <span class="subject-score mid">85</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 第二行：雷达图 + 排名 + AI ═══ -->
+  <div class="triple-columns">
+    <div class="content-left">
+      <!-- 雷达图 -->
+      <div class="radar-section fade-in">
+        <div class="radar-title">学科能力雷达</div>
+        <div class="radar-area">
+          <canvas id="radarChart"></canvas>
+        </div>
+        <div class="radar-legend">
+          <div class="radar-legend-item">
+            <span class="legend-dot" style="background:#334eac"></span>本次成绩
+          </div>
+          <div class="radar-legend-item">
+            <span class="legend-dot" style="background:#7096d1"></span>上次成绩
+          </div>
+        </div>
+      </div>
+
+      <!-- 排名 -->
+      <div class="ranking-section fade-in">
+        <div class="ranking-title">班级排名</div>
+        <div class="ranking-list">
+          <div class="ranking-item ranking-header">
+            <div class="ranking-left">
+              <span class="ranking-rank">排名</span>
+              <span class="ranking-name">姓名</span>
+              <span class="ranking-rank-change">变化</span>
+            </div>
+            <div class="ranking-right">
+              <span class="ranking-score">分数</span>
+              <span class="ranking-change">变化</span>
+            </div>
+          </div>
+          <div class="ranking-item">
+            <div class="ranking-left">
+              <span class="ranking-rank">3</span>
+              <span class="ranking-name">李子涵</span>
+              <span class="ranking-rank-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>2</span>
+            </div>
+            <div class="ranking-right">
+              <span class="ranking-score">553</span>
+              <span class="ranking-change up">+6</span>
+            </div>
+          </div>
+          <div class="ranking-item is-me">
+            <div class="ranking-left">
+              <span class="ranking-rank">4</span>
+              <span class="ranking-name">谢宇轩</span>
+              <span class="ranking-rank-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>1</span>
+            </div>
+            <div class="ranking-right">
+              <span class="ranking-score">547</span>
+              <span class="ranking-change up">+3</span>
+            </div>
+          </div>
+          <div class="ranking-item">
+            <div class="ranking-left">
+              <span class="ranking-rank">5</span>
+              <span class="ranking-name">王思远</span>
+              <span class="ranking-rank-change down"><svg viewBox="0 0 8 8"><path d="M4 7L7 3H1Z" fill="currentColor"/></svg>1</span>
+            </div>
+            <div class="ranking-right">
+              <span class="ranking-score">544</span>
+              <span class="ranking-change down">-5</span>
+            </div>
+          </div>
+          <div class="ranking-item">
+            <div class="ranking-left">
+              <span class="ranking-rank">6</span>
+              <span class="ranking-name">赵梓涵</span>
+              <span class="ranking-rank-change flat">—</span>
+            </div>
+            <div class="ranking-right">
+              <span class="ranking-score">541</span>
+              <span class="ranking-change flat">—</span>
+            </div>
+          </div>
+          <div class="ranking-item">
+            <div class="ranking-left">
+              <span class="ranking-rank">7</span>
+              <span class="ranking-name">孙一诺</span>
+              <span class="ranking-rank-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>3</span>
+            </div>
+            <div class="ranking-right">
+              <span class="ranking-score">538</span>
+              <span class="ranking-change up">+8</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 占位 -->
+    <div class="ai-placeholder fade-in">
+      <div class="ai-placeholder-inner">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+          <path d="M9 21v1a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1"/>
+          <line x1="10" y1="10" x2="10.01" y2="10"/>
+          <line x1="14" y1="10" x2="14.01" y2="10"/>
+        </svg>
+        <span class="ai-placeholder-text">AI 智能助手</span>
+        <span class="ai-placeholder-sub">即将上线</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 详细表格 ═══ -->
+  <div class="detail-section fade-in">
+    <div class="detail-title">详细成绩数据</div>
+    <table class="score-table">
+      <thead>
+        <tr>
+          <th>考试</th>
+          <th>语文</th><th>数学</th><th>英语</th><th>科学</th><th>道德与法治</th>
+          <th>总分</th><th>校排名</th><th>班排名</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600;text-align:left">第一次月考</td>
+          <td>88</td><td>92</td><td>85</td><td>87</td><td>82</td>
+          <td style="font-weight:700">434</td>
+          <td><span class="rank-badge rank-top">28</span></td>
+          <td><span class="rank-badge rank-top">5</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;text-align:left">期中考试</td>
+          <td>90 <span class="score-up">+2</span></td>
+          <td>94 <span class="score-up">+2</span></td>
+          <td>86 <span class="score-up">+1</span></td>
+          <td>89 <span class="score-up">+2</span></td>
+          <td>84 <span class="score-up">+2</span></td>
+          <td style="font-weight:700">443</td>
+          <td><span class="rank-badge rank-top">22</span></td>
+          <td><span class="rank-badge rank-top">4</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;text-align:left">第二次月考</td>
+          <td>87 <span class="score-down">-3</span></td>
+          <td>91 <span class="score-down">-3</span></td>
+          <td>88 <span class="score-up">+2</span></td>
+          <td>85 <span class="score-down">-4</span></td>
+          <td>86 <span class="score-up">+2</span></td>
+          <td style="font-weight:700">437</td>
+          <td><span class="rank-badge rank-top">25</span></td>
+          <td><span class="rank-badge rank-top">5</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;text-align:left">期末考试</td>
+          <td>91 <span class="score-up">+4</span></td>
+          <td>95 <span class="score-up">+4</span></td>
+          <td>87 <span class="score-down">-1</span></td>
+          <td>90 <span class="score-up">+5</span></td>
+          <td>83 <span class="score-down">-3</span></td>
+          <td style="font-weight:700">446</td>
+          <td><span class="rank-badge rank-top">18</span></td>
+          <td><span class="rank-badge rank-top">4</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;text-align:left">第三次月考</td>
+          <td>89 <span class="score-down">-2</span></td>
+          <td>97 <span class="score-up">+2</span></td>
+          <td>86 <span class="score-down">-1</span></td>
+          <td>92 <span class="score-up">+2</span></td>
+          <td>84 <span class="score-up">+1</span></td>
+          <td style="font-weight:700">448</td>
+          <td><span class="rank-badge rank-top">15</span></td>
+          <td><span class="rank-badge rank-top">5</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;text-align:left">模拟考试</td>
+          <td>92 <span class="score-up">+3</span></td>
+          <td>96 <span class="score-down">-1</span></td>
+          <td>88 <span class="score-up">+2</span></td>
+          <td>91 <span class="score-down">-1</span></td>
+          <td>85 <span class="score-up">+1</span></td>
+          <td style="font-weight:700">547</td>
+          <td><span class="rank-badge rank-top">12</span></td>
+          <td><span class="rank-badge rank-top">4</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ── 模拟数据 ──
+const examLabels = ['第一次月考', '期中考试', '第二次月考', '期末考试', '第三次月考', '模拟考试'];
+const scores = {
+  chinese: [88, 90, 87, 91, 89, 92],
+  math:    [92, 94, 91, 95, 97, 96],
+  english: [85, 86, 88, 87, 86, 88],
+  science: [87, 89, 85, 90, 92, 91],
+  ethics:  [82, 84, 86, 83, 84, 85],
+};
+const totalScores = [434, 443, 437, 446, 448, 547];
+const classRank = [5, 4, 5, 4, 5, 4];
+const schoolRank = [28, 22, 25, 18, 15, 12];
+
+// ── 柱状图数据计算（与原逻辑一致） ──
+function getBarData(raw) {
+  const min = Math.min(...raw), max = Math.max(...raw);
+  const range = max - min || 1;
+  const baseline = Math.max(0, min - range * 0.5 - 10);
+  return raw.map(v => v - baseline);
+}
+function getBarMax(raw) {
+  const min = Math.min(...raw), max = Math.max(...raw);
+  const range = max - min || 1;
+  const baseline = Math.max(0, min - range * 0.5 - 10);
+  return max - baseline + range * 0.3;
+}
+
+// ── 创建渐变 ──
+function createBarGradient(ctx, chartArea) {
+  const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+  gradient.addColorStop(0, 'rgba(112,150,209,0.65)');
+  gradient.addColorStop(1, 'rgba(51,78,172,0.85)');
+  return gradient;
+}
+
+// ── 主图表 ──
+const mainCtx = document.getElementById('mainChart').getContext('2d');
+const mainChart = new Chart(mainCtx, {
+  type: 'bar',
+  data: {
+    labels: examLabels,
+    datasets: [
+      {
+        label: '总分',
+        data: getBarData(totalScores),
+        backgroundColor: function(context) {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          if (!chartArea) return 'rgba(51,78,172,0.7)';
+          return createBarGradient(ctx, chartArea);
+        },
+        hoverBackgroundColor: 'rgba(40,66,154,0.9)',
+        borderRadius: {topLeft: 4, topRight: 4},
+        borderSkipped: 'bottom',
+        barPercentage: 0.42,
+        yAxisID: 'bar',
+        order: 2,
+      },
+      {
+        label: '班排名',
+        data: classRank,
+        type: 'line',
+        borderColor: '#334EAC',
+        backgroundColor: 'transparent',
+        pointBackgroundColor: '#334EAC',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.35,
+        fill: false,
+        yAxisID: 'yLeft',
+        order: 1,
+      },
+      {
+        label: '校排名',
+        data: schoolRank,
+        type: 'line',
+        borderColor: '#D97B2C',
+        backgroundColor: 'transparent',
+        pointBackgroundColor: '#D97B2C',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        borderWidth: 2.5,
+        tension: 0.35,
+        fill: false,
+        yAxisID: 'yRight',
+        order: 1,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(255,255,255,0.98)',
+        titleColor: '#1F2937',
+        bodyColor: '#6B7280',
+        borderColor: '#E5E7EB',
+        borderWidth: 1,
+        cornerRadius: 10,
+        padding: 14,
+        titleFont: { size: 13, weight: 'bold' },
+        bodyFont: { size: 12 },
+        bodySpacing: 6,
+        usePointStyle: true,
+        boxPadding: 4,
+        caretSize: 6,
+        callbacks: {
+          title: (items) => items[0].label,
+          afterTitle: (items) => {
+            const idx = items[0].dataIndex;
+            return '总分：' + totalScores[idx] + ' 分';
+          },
+          label: (ctx) => {
+            const l = ctx.dataset.label;
+            const v = ctx.parsed.y;
+            if (l === '班排名') return '  班排名：第 ' + v + ' 名';
+            if (l === '校排名') return '  校排名：第 ' + v + ' 名';
+            return null;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(100,116,139,0.06)', lineWidth: 1 },
+        ticks: { font: { size: 12, weight: '500' }, color: '#9CA3AF', padding: 8 },
+        border: { display: false },
+      },
+      bar: { display: false, min: 0, max: getBarMax(totalScores) },
+      yLeft: {
+        position: 'left',
+        title: { display: true, text: '班排名', color: '#334EAC', font: { size: 11, weight: 'bold' }, padding: 8 },
+        reverse: true, min: 0, max: 50,
+        grid: { color: 'rgba(100,116,139,0.06)', lineWidth: 1 },
+        ticks: { stepSize: 10, padding: 6, color: '#334EAC', font: { size: 11 }, callback: v => v > 0 ? v + '名' : '' },
+        border: { display: false },
+      },
+      yRight: {
+        position: 'right',
+        title: { display: true, text: '校排名', color: '#D97B2C', font: { size: 11, weight: 'bold' }, padding: 8 },
+        reverse: true, min: 0, max: 160,
+        grid: { drawOnChartArea: false },
+        ticks: { stepSize: 40, padding: 6, color: '#D97B2C', font: { size: 11 }, callback: v => v > 0 ? v + '名' : '' },
+        border: { display: false },
+      },
+    },
+    animation: { duration: 900, easing: 'easeOutQuart' },
+  },
+});
+
+// ── 科目切换 ──
+document.getElementById('subjectPicker').addEventListener('change', function() {
+  const key = this.value;
+  const raw = key === 'total' ? totalScores : scores[key];
+  mainChart.data.datasets[0].data = getBarData(raw);
+  mainChart.data.datasets[0].label = key === 'total' ? '总分' : {chinese:'语文',math:'数学',english:'英语',science:'科学',ethics:'道德与法治'}[key];
+  mainChart.options.scales.bar.max = getBarMax(raw);
+  mainChart.update();
+});
+
+// ── 雷达图 ──
+const radarCtx = document.getElementById('radarChart').getContext('2d');
+new Chart(radarCtx, {
+  type: 'radar',
+  data: {
+    labels: ['语文', '数学', '英语', '科学', '道德与法治'],
+    datasets: [
+      {
+        label: '本次成绩',
+        data: [92, 96, 88, 91, 85],
+        backgroundColor: 'rgba(51,78,172,0.12)',
+        borderColor: 'rgba(51,78,172,0.75)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#334EAC',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+      },
+      {
+        label: '上次成绩',
+        data: [89, 97, 86, 92, 84],
+        backgroundColor: 'rgba(112,150,209,0.10)',
+        borderColor: 'rgba(112,150,209,0.6)',
+        borderWidth: 2,
+        pointBackgroundColor: '#7096D1',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 3.5,
+        pointHoverRadius: 6,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(255,255,255,0.98)',
+        titleColor: '#1F2937',
+        bodyColor: '#6B7280',
+        borderColor: '#E5E7EB',
+        borderWidth: 1,
+        cornerRadius: 10,
+        padding: 12,
+        titleFont: { size: 13, weight: 'bold' },
+        bodyFont: { size: 12 },
+        usePointStyle: true,
+        callbacks: {
+          title: (ctx) => ctx[0].label,
+          label: (ctx) => '  ' + ctx.dataset.label + '：' + ctx.parsed.r + ' 分',
+        },
+      },
+    },
+    scales: {
+      r: {
+        beginAtZero: true, max: 100,
+        ticks: { stepSize: 25, display: false },
+        grid: { color: 'rgba(100,116,139,0.10)' },
+        angleLines: { color: 'rgba(100,116,139,0.08)' },
+        pointLabels: { color: '#475569', font: { size: 12, weight: 'bold' }, padding: 12 },
+      },
+    },
+    animation: { duration: 900, easing: 'easeOutQuart' },
+  },
+});
+</script>
+
+</body>
+</html>

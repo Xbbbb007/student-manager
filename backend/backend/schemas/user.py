@@ -16,7 +16,9 @@ class StaffInfo(BaseModel):
     id: int
     username: str
     name: str
-    role: str  # "teacher" | "admin"
+    role: str
+    user_type: str = "staff"
+    subject: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -27,6 +29,8 @@ class StudentInfo(BaseModel):
     username: str
     name: str
     role: str = "student"
+    user_type: str = "student"
+    class_id: Optional[int] = None
 
     class Config:
         from_attributes = True

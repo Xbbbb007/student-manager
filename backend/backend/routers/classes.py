@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+﻿from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -34,8 +34,6 @@ def get_current_staff(authorization: Optional[str] = Header(None), db: Session =
 
 @router.get("/", response_model=ApiResponse)
 def list_classes(current_user: Staff = Depends(get_current_staff), db: Session = Depends(get_db)):
-    if current_user.role != StaffRole.ADMIN:
-        raise HTTPException(403, detail="仅管理员可查看")
     classes = db.query(Class).all()
     data = []
     for c in classes:
@@ -51,4 +49,3 @@ def list_classes(current_user: Staff = Depends(get_current_staff), db: Session =
             "student_count": student_count
         })
     return ApiResponse(data=data)
-

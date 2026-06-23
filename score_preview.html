@@ -1,0 +1,687 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成绩报告 — 谢宇轩</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+/* ============ TOKENS ============ */
+:root {
+  --ink: #1a1a2e;
+  --ink-secondary: #5a5a7a;
+  --ink-light: #9a9ab4;
+  --cream: #f5f5f0;
+  --cream-warm: #f5f0ea;
+  --card: #ffffff;
+  --accent: #c05621;
+  --accent-light: #ed8936;
+  --accent-glow: rgba(192,86,33,0.08);
+  --success: #2d8a56;
+  --danger: #c53030;
+  --border: #e8e4df;
+  --border-light: #f0ece7;
+  --serif: 'Noto Serif SC', 'Songti SC', serif;
+  --sans: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --shadow-sm: 0 1px 3px rgba(26,26,46,0.04), 0 1px 2px rgba(26,26,46,0.06);
+  --shadow-md: 0 4px 12px rgba(26,26,46,0.06), 0 2px 4px rgba(26,26,46,0.04);
+  --shadow-lg: 0 12px 40px rgba(26,26,46,0.08), 0 4px 12px rgba(26,26,46,0.04);
+  --shadow-glow: 0 0 0 1px rgba(192,86,33,0.1), 0 4px 20px rgba(192,86,33,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--cream);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============ BACKGROUND TEXTURE ============ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(192,86,33,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(26,26,46,0.03) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============ LAYOUT ============ */
+.page { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 32px 40px 60px; }
+
+/* ============ HEADER ============ */
+.header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 40px; padding-bottom: 24px;
+  border-bottom: 2px solid var(--ink);
+}
+.header-left {}
+.header-tag {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.header-name {
+  font-family: var(--serif); font-size: 36px; font-weight: 900;
+  color: var(--ink); letter-spacing: -0.5px; line-height: 1.2;
+}
+.header-sub {
+  font-size: 14px; color: var(--ink-secondary); margin-top: 4px;
+  font-weight: 400;
+}
+.header-right { text-align: right; }
+.header-score {
+  font-family: var(--mono); font-size: 52px; font-weight: 700;
+  color: var(--accent); line-height: 1;
+}
+.header-score-label {
+  font-size: 12px; color: var(--ink-light); font-weight: 500;
+  letter-spacing: 1px; margin-top: 4px;
+}
+
+/* ============ STAT STRIP ============ */
+.stat-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+  margin-bottom: 36px;
+}
+.stat-card {
+  background: var(--card); border-radius: 12px; padding: 20px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+  position: relative; overflow: hidden; transition: all 0.3s ease;
+}
+.stat-card:hover {
+  box-shadow: var(--shadow-md); transform: translateY(-2px);
+  border-color: var(--border);
+}
+.stat-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 12px 12px 0 0;
+}
+.stat-card:nth-child(1)::after { background: linear-gradient(90deg, #c53030, #e53e3e); }
+.stat-card:nth-child(2)::after { background: linear-gradient(90deg, #2b6cb0, #4299e1); }
+.stat-card:nth-child(3)::after { background: linear-gradient(90deg, #2d8a56, #48bb78); }
+.stat-card:nth-child(4)::after { background: linear-gradient(90deg, #d69e2e, #ecc94b); }
+.stat-card:nth-child(5)::after { background: linear-gradient(90deg, var(--accent-amber), #d69e2e); }
+.stat-label {
+  font-size: 12px; color: var(--ink-light); font-weight: 500;
+  letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.stat-value {
+  font-family: var(--mono); font-size: 28px; font-weight: 700;
+  color: var(--ink); line-height: 1;
+}
+.stat-sub {
+  font-size: 11px; margin-top: 6px; font-weight: 600;
+}
+.stat-sub.up { color: var(--success); }
+.stat-sub.down { color: var(--danger); }
+
+/* ============ TWO-COL LAYOUT ============ */
+.two-col { display: grid; grid-template-columns: 1fr 360px; gap: 24px; margin-bottom: 36px; }
+
+/* ============ CARD ============ */
+.card {
+  background: var(--card); border-radius: 16px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+  padding: 28px; position: relative; overflow: hidden;
+}
+.card:hover { box-shadow: var(--shadow-md); }
+.card-title {
+  font-family: var(--serif); font-size: 17px; font-weight: 700;
+  color: var(--ink); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title::before {
+  content: ''; width: 4px; height: 18px; border-radius: 2px;
+  background: var(--accent);
+}
+
+/* ============ CHART ============ */
+.chart-area { height: 320px; position: relative; }
+
+/* ============ RANKING ============ */
+.ranking-list { display: flex; flex-direction: column; gap: 2px; }
+.ranking-header {
+  display: grid; grid-template-columns: 40px 1fr 60px 70px 70px;
+  padding: 8px 12px; font-size: 11px; color: var(--ink-light);
+  font-weight: 600; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-light);
+  margin-bottom: 4px;
+}
+.ranking-row {
+  display: grid; grid-template-columns: 40px 1fr 60px 70px 70px;
+  padding: 10px 12px; border-radius: 10px; align-items: center;
+  transition: all 0.2s ease; cursor: default;
+}
+.ranking-row:hover { background: var(--cream-warm); }
+.ranking-row.is-me {
+  background: linear-gradient(135deg, rgba(192,86,33,0.06), rgba(192,86,33,0.02));
+  border: 1px solid rgba(192,86,33,0.15);
+  box-shadow: var(--shadow-glow);
+}
+.ranking-rank {
+  font-family: var(--mono); font-size: 15px; font-weight: 700;
+  color: var(--ink-light);
+}
+.ranking-row.is-me .ranking-rank { color: var(--accent); }
+.ranking-name { font-weight: 600; font-size: 14px; }
+.ranking-row.is-me .ranking-name { color: var(--accent); font-weight: 700; }
+.ranking-total {
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  text-align: right;
+}
+.ranking-change {
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 2px;
+}
+.ranking-change.up { color: var(--success); }
+.ranking-change.down { color: var(--danger); }
+.ranking-change.flat { color: var(--ink-light); }
+.ranking-change svg { width: 10px; height: 10px; }
+
+/* ============ SPARKLINE ============ */
+.sparkline { width: 56px; height: 24px; }
+.sparkline polyline {
+  fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ============ PROFILE CARD ============ */
+.profile-card {
+  background: linear-gradient(145deg, #1c1917 0%, #292524 100%);
+  color: white; border-radius: 16px; padding: 32px 28px;
+  position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
+}
+.profile-card::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(192,86,33,0.2) 0%, transparent 70%);
+}
+.profile-card::after {
+  content: ''; position: absolute; bottom: -20px; left: -20px;
+  width: 100px; height: 100px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(112,150,209,0.15) 0%, transparent 70%);
+}
+.profile-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 26px; font-weight: 900;
+  color: white; margin-bottom: 20px; position: relative; z-index: 1;
+  box-shadow: 0 4px 12px rgba(192,86,33,0.3);
+}
+.profile-name {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  position: relative; z-index: 1;
+}
+.profile-no {
+  font-family: var(--mono); font-size: 13px; color: rgba(255,255,255,0.5);
+  margin-top: 4px; position: relative; z-index: 1;
+}
+.profile-class {
+  font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 2px;
+  position: relative; z-index: 1;
+}
+.profile-divider {
+  height: 1px; background: rgba(255,255,255,0.1); margin: 20px 0;
+  position: relative; z-index: 1;
+}
+.profile-scores {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  position: relative; z-index: 1;
+}
+.profile-score-item {
+  background: rgba(255,255,255,0.06); border-radius: 10px; padding: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.profile-score-label { font-size: 11px; color: rgba(255,255,255,0.5); }
+.profile-score-val {
+  font-family: var(--mono); font-size: 20px; font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ============ DETAIL TABLE ============ */
+.detail-table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  font-size: 13px;
+}
+.detail-table thead th {
+  font-size: 12px; font-weight: 600; color: var(--ink-light);
+  padding: 12px 16px; text-align: center; letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--ink);
+}
+.detail-table thead th:first-child { text-align: left; }
+.detail-table tbody td {
+  padding: 14px 16px; text-align: center; border-bottom: 1px solid var(--border-light);
+  font-family: var(--mono); font-size: 13px;
+}
+.detail-table tbody td:first-child {
+  text-align: left; font-family: var(--sans); font-weight: 600;
+  font-size: 13px; color: var(--ink);
+}
+.detail-table tbody tr { transition: background 0.15s; }
+.detail-table tbody tr:hover { background: var(--cream-warm); }
+.detail-table tbody tr:last-child td { border-bottom: none; }
+
+.change-pill {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 7px; border-radius: 6px; font-size: 11px;
+  font-weight: 700; font-family: var(--mono);
+}
+.change-pill.up { background: rgba(45,138,86,0.08); color: var(--success); }
+.change-pill.down { background: rgba(197,48,48,0.08); color: var(--danger); }
+.change-pill.flat { background: rgba(154,154,180,0.08); color: var(--ink-light); }
+
+.rank-badge {
+  display: inline-flex; min-width: 32px; padding: 3px 10px;
+  border-radius: 8px; font-size: 12px; font-weight: 700;
+  font-family: var(--mono);
+}
+.rank-top { background: rgba(192,86,33,0.08); color: var(--accent); }
+.rank-mid { background: rgba(214,158,46,0.08); color: #b7791f; }
+.rank-low { background: rgba(154,154,180,0.06); color: var(--ink-light); }
+
+/* ============ ANIMATIONS ============ */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate { animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.1s; }
+.d3 { animation-delay: 0.15s; }
+.d4 { animation-delay: 0.2s; }
+.d5 { animation-delay: 0.25s; }
+.d6 { animation-delay: 0.3s; }
+.d7 { animation-delay: 0.35s; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 900px) {
+  .page { padding: 20px; }
+  .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .header-right { text-align: left; }
+  .stat-strip { grid-template-columns: repeat(3, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+  .profile-card { order: -1; }
+}
+@media (max-width: 600px) {
+  .stat-strip { grid-template-columns: 1fr 1fr; }
+  .header-score { font-size: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .hero-glow { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header animate d1">
+    <div class="header-left">
+      <div class="header-tag">期末考试 · 成绩报告</div>
+      <div class="header-name">谢宇轩</div>
+      <div class="header-sub">小学部三年级一班 · 01030106</div>
+    </div>
+    <div class="header-right">
+      <div class="header-score">404</div>
+      <div class="header-score-label">总分 · 第12名</div>
+    </div>
+  </div>
+
+  <!-- STAT STRIP -->
+  <div class="stat-strip">
+    <div class="stat-card animate d2">
+      <div class="stat-label">语 文</div>
+      <div class="stat-value">91</div>
+      <div class="stat-sub up">↑ 25</div>
+    </div>
+    <div class="stat-card animate d2">
+      <div class="stat-label">数 学</div>
+      <div class="stat-value">89</div>
+      <div class="stat-sub up">↑ 24</div>
+    </div>
+    <div class="stat-card animate d3">
+      <div class="stat-label">英 语</div>
+      <div class="stat-value">83</div>
+      <div class="stat-sub down">↓ 6</div>
+    </div>
+    <div class="stat-card animate d3">
+      <div class="stat-label">科 学</div>
+      <div class="stat-value">72</div>
+      <div class="stat-sub down">↓ 13</div>
+    </div>
+    <div class="stat-card animate d4">
+      <div class="stat-label">道德与法治</div>
+      <div class="stat-value">69</div>
+      <div class="stat-sub up">↑ 4</div>
+    </div>
+  </div>
+
+  <!-- TWO COLUMN -->
+  <div class="two-col">
+    <!-- LEFT: Chart -->
+    <div class="card animate d4">
+      <div class="card-title">成绩变化趋势</div>
+      <div class="chart-area">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+
+    <!-- RIGHT: Profile -->
+    <div class="profile-card animate d5">
+      <div class="profile-avatar">谢</div>
+      <div class="profile-name">谢宇轩</div>
+      <div class="profile-no">01030106</div>
+      <div class="profile-class">小学部三年级一班</div>
+      <div class="profile-divider"></div>
+      <div class="profile-scores">
+        <div class="profile-score-item">
+          <div class="profile-score-label">期末总分</div>
+          <div class="profile-score-val">404</div>
+        </div>
+        <div class="profile-score-item">
+          <div class="profile-score-label">班级排名</div>
+          <div class="profile-score-val" style="color:#ed8936">12</div>
+        </div>
+        <div class="profile-score-item">
+          <div class="profile-score-label">年级排名</div>
+          <div class="profile-score-val" style="color:#7096d1">12</div>
+        </div>
+        <div class="profile-score-item">
+          <div class="profile-score-label">排名变化</div>
+          <div class="profile-score-val" style="color:#48bb78">↑ 16</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKING + RADAR -->
+  <div class="two-col">
+    <!-- CLASS RANKING -->
+    <div class="card animate d5">
+      <div class="card-title">班级排名 · 期末考试</div>
+      <div class="ranking-list">
+        <div class="ranking-header">
+          <span>排名</span><span>姓名</span><span style="text-align:right">总分</span>
+          <span style="text-align:right">排名变化</span>
+          <span style="text-align:right">分数变化</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">6</span>
+          <span class="ranking-name">魏俊哲</span>
+          <span class="ranking-total">418</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>10</span>
+          <span class="ranking-change up">+21</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">7</span>
+          <span class="ranking-name">方雅婷</span>
+          <span class="ranking-total">415</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>19</span>
+          <span class="ranking-change up">+38</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">8</span>
+          <span class="ranking-name">段芷晴</span>
+          <span class="ranking-total">411</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>16</span>
+          <span class="ranking-change up">+31</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">9</span>
+          <span class="ranking-name">夏梓萱</span>
+          <span class="ranking-total">411</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>8</span>
+          <span class="ranking-change up">+16</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">10</span>
+          <span class="ranking-name">蔡子轩</span>
+          <span class="ranking-total">408</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>20</span>
+          <span class="ranking-change up">+63</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">11</span>
+          <span class="ranking-name">宋致远</span>
+          <span class="ranking-total">407</span>
+          <span class="ranking-change down"><svg viewBox="0 0 8 8"><path d="M4 7L7 3H1Z" fill="currentColor"/></svg>4</span>
+          <span class="ranking-change down">-4</span>
+        </div>
+        <div class="ranking-row is-me">
+          <span class="ranking-rank">12</span>
+          <span class="ranking-name">谢宇轩</span>
+          <span class="ranking-total">404</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>16</span>
+          <span class="ranking-change up">+34</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">13</span>
+          <span class="ranking-name">葛浩然</span>
+          <span class="ranking-total">403</span>
+          <span class="ranking-change up"><svg viewBox="0 0 8 8"><path d="M4 1L7 5H1Z" fill="currentColor"/></svg>12</span>
+          <span class="ranking-change up">+24</span>
+        </div>
+        <div class="ranking-row">
+          <span class="ranking-rank">14</span>
+          <span class="ranking-name">赵天宇</span>
+          <span class="ranking-total">402</span>
+          <span class="ranking-change down"><svg viewBox="0 0 8 8"><path d="M4 7L7 3H1Z" fill="currentColor"/></svg>3</span>
+          <span class="ranking-change down">-3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RADAR -->
+    <div class="card animate d6">
+      <div class="card-title">学科能力雷达</div>
+      <div style="height:280px;display:flex;align-items:center;justify-content:center">
+        <canvas id="radarChart"></canvas>
+      </div>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:12px;font-size:12px;color:var(--ink-secondary)">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:rgba(192,86,33,0.7)"></span>本次</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:rgba(112,150,209,0.6)"></span>上次</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL TABLE -->
+  <div class="card animate d7" style="margin-bottom:0">
+    <div class="card-title">详细成绩数据</div>
+    <table class="detail-table">
+      <thead>
+        <tr>
+          <th>考试</th><th>语文</th><th>数学</th><th>英语</th><th>科学</th><th>道德与法治</th>
+          <th>总分</th><th>班排名</th><th>级排名</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>第一次月考</td><td>74</td><td>76</td><td>89</td><td>82</td><td>91</td>
+          <td style="font-weight:700">412</td>
+          <td><span class="rank-badge rank-mid">14</span></td>
+          <td><span class="rank-badge rank-mid">18</span></td>
+        </tr>
+        <tr>
+          <td>第二次月考</td><td>92 <span class="change-pill up">+18</span></td>
+          <td>70 <span class="change-pill down">-6</span></td>
+          <td>92 <span class="change-pill up">+3</span></td>
+          <td>84 <span class="change-pill up">+2</span></td>
+          <td>67 <span class="change-pill down">-24</span></td>
+          <td style="font-weight:700">405 <span class="change-pill down">-7</span></td>
+          <td><span class="rank-badge rank-top">3</span></td>
+          <td><span class="rank-badge rank-top">4</span></td>
+        </tr>
+        <tr>
+          <td>期中考试</td><td>86 <span class="change-pill down">-6</span></td>
+          <td>78 <span class="change-pill up">+8</span></td>
+          <td>65 <span class="change-pill down">-27</span></td>
+          <td>93 <span class="change-pill up">+9</span></td>
+          <td>93 <span class="change-pill up">+26</span></td>
+          <td style="font-weight:700">415 <span class="change-pill up">+10</span></td>
+          <td><span class="rank-badge rank-mid">8</span></td>
+          <td><span class="rank-badge rank-mid">12</span></td>
+        </tr>
+        <tr>
+          <td>第三次月考</td><td>69 <span class="change-pill down">-17</span></td>
+          <td>81 <span class="change-pill up">+3</span></td>
+          <td>65 <span class="change-pill down">-0</span></td>
+          <td>76 <span class="change-pill down">-17</span></td>
+          <td>66 <span class="change-pill down">-27</span></td>
+          <td style="font-weight:700">357 <span class="change-pill down">-58</span></td>
+          <td><span class="rank-badge rank-low">17</span></td>
+          <td><span class="rank-badge rank-low">24</span></td>
+        </tr>
+        <tr>
+          <td>第四次月考</td><td>66 <span class="change-pill down">-3</span></td>
+          <td>65 <span class="change-pill down">-16</span></td>
+          <td>89 <span class="change-pill up">+24</span></td>
+          <td>85 <span class="change-pill up">+9</span></td>
+          <td>65 <span class="change-pill down">-1</span></td>
+          <td style="font-weight:700">370 <span class="change-pill up">+13</span></td>
+          <td><span class="rank-badge rank-low">15</span></td>
+          <td><span class="rank-badge rank-low">23</span></td>
+        </tr>
+        <tr>
+          <td>期末考试</td><td>91 <span class="change-pill up">+25</span></td>
+          <td>89 <span class="change-pill up">+24</span></td>
+          <td>83 <span class="change-pill down">-6</span></td>
+          <td>72 <span class="change-pill down">-13</span></td>
+          <td>69 <span class="change-pill up">+4</span></td>
+          <td style="font-weight:700;color:var(--accent)">404 <span class="change-pill up">+34</span></td>
+          <td><span class="rank-badge rank-mid">3</span></td>
+          <td><span class="rank-badge rank-top">5</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ============ MAIN CHART ============
+const examLabels = ['第一次月考','第二次月考','期中考试','第三次月考','第四次月考','期末考试'];
+const totalScores = [412, 405, 415, 357, 370, 404];
+const classRank = [14, 3, 8, 17, 15, 3];
+const schoolRank = [18, 4, 12, 24, 23, 5];
+
+const ctx1 = document.getElementById('mainChart').getContext('2d');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: examLabels,
+    datasets: [
+      {
+        label: '总分',
+        data: totalScores,
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
+          g.addColorStop(0, 'rgba(192,86,33,0.7)');
+          g.addColorStop(1, 'rgba(192,86,33,0.15)');
+          return g;
+        },
+        borderRadius: 6, borderSkipped: false,
+        barPercentage: 0.5, yAxisID: 'bar', order: 2,
+      },
+      {
+        label: '班排名',
+        data: classRank, type: 'line',
+        borderColor: '#1a1a2e', backgroundColor: 'transparent',
+        pointBackgroundColor: '#1a1a2e', pointBorderColor: '#fff',
+        pointBorderWidth: 2, pointRadius: 5, borderWidth: 2.5, tension: 0.4,
+        fill: false, yAxisID: 'yLeft', order: 1,
+      },
+      {
+        label: '级排名',
+        data: schoolRank, type: 'line',
+        borderColor: '#7096d1', backgroundColor: 'transparent',
+        pointBackgroundColor: '#7096d1', pointBorderColor: '#fff',
+        pointBorderWidth: 2, pointRadius: 5, borderWidth: 2.5, tension: 0.4,
+        borderDash: [6, 3], fill: false, yAxisID: 'yRight', order: 1,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 12, weight: '600' }, color: '#5a5a7a' } },
+      tooltip: {
+        backgroundColor: 'rgba(26,26,46,0.92)', titleColor: '#fff', bodyColor: 'rgba(255,255,255,0.8)',
+        borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, cornerRadius: 10, padding: 14,
+        titleFont: { size: 13, weight: 'bold' }, bodyFont: { size: 12 }, bodySpacing: 6,
+        callbacks: {
+          afterTitle: (items) => '总分：' + totalScores[items[0].dataIndex] + ' 分',
+          label: (ctx) => {
+            if (ctx.dataset.label === '班排名') return '  班排名：第 ' + ctx.parsed.y + ' 名';
+            if (ctx.dataset.label === '级排名') return '  级排名：第 ' + ctx.parsed.y + ' 名';
+            return null;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11, weight: '500' }, color: '#9a9ab4' } },
+      bar: { display: false, min: 0, max: 500 },
+      yLeft: { position: 'left', reverse: true, min: 0, max: 35, grid: { color: 'rgba(154,154,180,0.08)' }, ticks: { stepSize: 10, color: '#1a1a2e', font: { size: 11 }, callback: v => v > 0 ? v + '名' : '' }, border: { display: false }, title: { display: true, text: '班排名', color: '#1a1a2e', font: { size: 12, weight: 'bold' } } },
+      yRight: { position: 'right', reverse: true, min: 0, max: 60, grid: { drawOnChartArea: false }, ticks: { stepSize: 15, color: '#7096d1', font: { size: 11 }, callback: v => v > 0 ? v + '名' : '' }, border: { display: false }, title: { display: true, text: '级排名', color: '#7096d1', font: { size: 12, weight: 'bold' } } },
+    },
+    animation: { duration: 1000, easing: 'easeOutQuart' }
+  }
+});
+
+// ============ RADAR CHART ============
+const ctx2 = document.getElementById('radarChart').getContext('2d');
+new Chart(ctx2, {
+  type: 'radar',
+  data: {
+    labels: ['语文', '数学', '英语', '科学', '道德与法治'],
+    datasets: [
+      {
+        label: '本次', data: [91, 89, 83, 72, 69],
+        backgroundColor: 'rgba(192,86,33,0.12)', borderColor: 'rgba(192,86,33,0.8)',
+        borderWidth: 2.5, pointBackgroundColor: '#c05621', pointBorderColor: '#fff',
+        pointBorderWidth: 2, pointRadius: 4,
+      },
+      {
+        label: '上次', data: [66, 65, 89, 85, 65],
+        backgroundColor: 'rgba(112,150,209,0.1)', borderColor: 'rgba(112,150,209,0.6)',
+        borderWidth: 2, pointBackgroundColor: '#7096d1', pointBorderColor: '#fff',
+        pointBorderWidth: 2, pointRadius: 3, borderDash: [4, 2],
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      r: {
+        beginAtZero: true, max: 100, ticks: { stepSize: 25, display: false },
+        grid: { color: 'rgba(154,154,180,0.12)' },
+        angleLines: { color: 'rgba(154,154,180,0.1)' },
+        pointLabels: { color: '#1a1a2e', font: { size: 13, weight: '600', family: "'Noto Sans SC'" } }
+      }
+    },
+    animation: { duration: 800, easing: 'easeOutQuart' }
+  }
+});
+</script>
+</body>
+</html>
+
