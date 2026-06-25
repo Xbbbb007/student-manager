@@ -66,14 +66,14 @@ const quotes = [
 ];
 
 const watermarkRows = [
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
-  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART",
+  "SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM",
+  "ORPHISM SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY",
+  "GEOMETRIE ART SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME COULEUR",
+  "COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME",
+  "RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM SIMULTANEOUS",
+  "SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART",
+  "SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM",
 ];
 
 function pickRandom() {
