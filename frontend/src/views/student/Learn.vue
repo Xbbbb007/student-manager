@@ -216,22 +216,22 @@ onMounted(() => {
           <div class="delaunay-art-layer">
             <svg class="art-svg" viewBox="0 0 800 320" width="100%" height="100%" preserveAspectRatio="none">
               <!-- 左侧大同心圆环 -->
-              <circle cx="100" cy="160" r="140" fill="none" stroke="rgba(51, 78, 172, 0.05)" stroke-width="24" />
-              <circle cx="100" cy="160" r="100" fill="none" stroke="rgba(245, 158, 11, 0.04)" stroke-width="18" />
-              <circle cx="100" cy="160" r="60" fill="none" stroke="rgba(16, 185, 129, 0.04)" stroke-width="12" />
+              <circle cx="100" cy="160" r="140" fill="none" stroke="rgba(51, 78, 172, 0.08)" stroke-width="24" class="delaunay-shape" />
+              <circle cx="100" cy="160" r="100" fill="none" stroke="rgba(245, 158, 11, 0.08)" stroke-width="18" class="delaunay-shape" />
+              <circle cx="100" cy="160" r="60" fill="none" stroke="rgba(16, 185, 129, 0.08)" stroke-width="12" class="delaunay-shape" />
               
               <!-- 右侧交错同心圆弧与几何扇区 -->
-              <circle cx="700" cy="160" r="160" fill="none" stroke="rgba(16, 185, 129, 0.04)" stroke-width="32" stroke-dasharray="200 100" />
-              <circle cx="700" cy="160" r="100" fill="none" stroke="rgba(51, 78, 172, 0.04)" stroke-width="20" />
-              <circle cx="700" cy="160" r="50" fill="none" stroke="rgba(239, 68, 68, 0.03)" stroke-width="14" />
+              <circle cx="700" cy="160" r="160" fill="none" stroke="rgba(16, 185, 129, 0.08)" stroke-width="32" stroke-dasharray="200 100" class="delaunay-shape" />
+              <circle cx="700" cy="160" r="100" fill="none" stroke="rgba(51, 78, 172, 0.08)" stroke-width="20" class="delaunay-shape" />
+              <circle cx="700" cy="160" r="50" fill="none" stroke="rgba(239, 68, 68, 0.07)" stroke-width="14" class="delaunay-shape" />
 
               <!-- 中间横穿的对比彩带 -->
-              <path d="M 0 160 L 800 160" stroke="rgba(51, 78, 172, 0.02)" stroke-width="40" />
-              <path d="M 0 180 L 800 180" stroke="rgba(245, 158, 11, 0.02)" stroke-width="20" />
+              <path d="M 0 160 L 800 160" stroke="rgba(51, 78, 172, 0.05)" stroke-width="40" class="delaunay-shape" />
+              <path d="M 0 180 L 800 180" stroke="rgba(245, 158, 11, 0.05)" stroke-width="20" class="delaunay-shape" />
               
               <!-- 辅助装饰几何对比弧线 -->
-              <path d="M 300 60 A 120 120 0 0 1 500 60" fill="none" stroke="rgba(239, 68, 68, 0.04)" stroke-width="16" />
-              <path d="M 350 260 A 100 100 0 0 0 450 260" fill="none" stroke="rgba(51, 78, 172, 0.03)" stroke-width="12" />
+              <path d="M 300 60 A 120 120 0 0 1 500 60" fill="none" stroke="rgba(239, 68, 68, 0.08)" stroke-width="16" class="delaunay-shape" />
+              <path d="M 350 260 A 100 100 0 0 0 450 260" fill="none" stroke="rgba(51, 78, 172, 0.06)" stroke-width="12" class="delaunay-shape" />
             </svg>
           </div>
 
@@ -326,11 +326,17 @@ onMounted(() => {
   overflow: hidden;
 }
 .art-svg {
-  opacity: 0.9;
-  transition: opacity 0.4s ease;
+  opacity: 0.4; /* 默认情况下透明度较浅 */
+  transition: opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .quote-cell:hover .art-svg {
-  opacity: 1.0;
+  opacity: 1.0; /* 鼠标悬停在卡片上时，色彩浓烈展现 */
+}
+.delaunay-shape {
+  transition: stroke 0.5s ease;
+}
+.quote-cell:hover .delaunay-shape {
+  /* 悬停时通过调整 stroke 颜色来让对比几何色带和同心圆环更加靓丽显眼 */
 }
 .flip-card {
   position: relative;
