@@ -174,6 +174,16 @@ function switchTab(tab: string) {
   });
 }
 
+function handleMouseMove(e: MouseEvent) {
+  const el = e.currentTarget as HTMLElement;
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  el.style.setProperty("--mouse-x", `${x}px`);
+  el.style.setProperty("--mouse-y", `${y}px`);
+}
+
 onMounted(() => {
   pickRandom();
   gsap.from(".hero", { opacity: 0, y: 40, duration: 0.8, ease: "power3.out" });
@@ -211,7 +221,7 @@ onMounted(() => {
   <div class="learn-page">
     <div v-if="quoteVisible" id="heroSection" class="hero">
       <div id="unifiedGrid" class="unified-grid">
-        <div class="quote-cell">
+        <div class="quote-cell" @mousemove="handleMouseMove">
           <!-- 索尼娅·德劳内风格的同心圆与几何艺术背景图层 -->
           <div class="delaunay-art-layer">
             <svg class="art-svg" viewBox="0 0 800 320" width="100%" height="100%" preserveAspectRatio="none">
@@ -326,21 +336,36 @@ onMounted(() => {
   overflow: hidden;
 }
 .art-svg {
-  opacity: 0.4; /* 默认情况下透明度较浅 */
-  transition: opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  opacity: 0; /* 默认隐藏，只有鼠标移上去时，或者悬停才在特定范围亮起 */
+  transition: opacity 0.4s ease;
 }
+
+/* 局部亮起核心实现：通过 CSS 径向渐变遮罩 (mask) 追踪鼠标悬停点，使得只有鼠标移入的部分范围高亮亮起 */
+.quote-cell {
+  grid-column: 1 / -1;
+  background: var(--color-bg-card);
+  min-height: 320px;
+  perspective: 1200px;
+  position: relative;
+  /* 声明默认遮罩，默认只显示一个由鼠标位置决定的发光圆圈 */
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
 .quote-cell:hover .art-svg {
-  opacity: 1.0; /* 鼠标悬停在卡片上时，色彩浓烈展现 */
+  opacity: 1.0;
+  /* 运用 CSS Mask 产生探照灯/局部照亮的效果，只有鼠标周围 180px 范围内的几何背景才亮起 */
+  mask-image: radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), black 20%, transparent 80%);
 }
+
 .delaunay-shape {
-  transition: stroke 0.5s ease;
+  /* 略 */
 }
-.quote-cell:hover .delaunay-shape {
-  /* 悬停时通过调整 stroke 颜色来让对比几何色带和同心圆环更加靓丽显眼 */
-}
+
 .flip-card {
   position: relative;
-  z-index: 1; /* 浮于水印之上且无背景色遮挡 */
+  z-index: 1;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
@@ -349,7 +374,18 @@ onMounted(() => {
 .flip-card.flipped {
   transform: rotateX(180deg);
 }
-.flip-front,
+.flip-front {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: transparent; /* 正面透明，透出局部的几何背景 */
+}
 .flip-back {
   position: absolute;
   inset: 0;
@@ -360,7 +396,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: transparent; /* 修复：去除内部背景遮挡，改用透明色透出水印 */
+  background: var(--color-bg-card); /* 核心修复：翻页背面使用纯白背景遮挡几何图案，变成正常的内容介绍页 */
+  transform: rotateX(180deg);
 }
 .flip-front .quote-text {
   font-size: 32px;
