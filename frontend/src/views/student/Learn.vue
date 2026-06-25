@@ -322,6 +322,7 @@ onMounted(() => {
   background: var(--color-bg-card);
   min-height: 320px;
   perspective: 1200px;
+  position: relative; /* 核心修复：添加相对定位做定位上下文 */
 }
 /* 水印层 - MiMo官网风格大字铺满 */
 .watermark-layer {
@@ -331,7 +332,7 @@ onMounted(() => {
   flex-direction: column;
   justify-content: space-between;
   pointer-events: none;
-  z-index: 0;
+  z-index: 0; /* 在卡片内容下层 */
   overflow: hidden;
   padding: 10px 0;
 }
@@ -346,7 +347,7 @@ onMounted(() => {
   font-family: "Noto Sans SC", "Arial Black", sans-serif;
   font-size: clamp(50px, 9vw, 100px);
   font-weight: 900;
-  color: rgba(0, 0, 0, 0.03);
+  color: rgba(0, 0, 0, 0.05); /* 稍微加深点对比度以防白板显示不出 */
   line-height: 1;
   letter-spacing: 0.15em;
   transition: color 0.6s ease;
@@ -358,22 +359,13 @@ onMounted(() => {
   padding-left: 3em;
 }
 .quote-cell:hover .wm-phrase {
-  color: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.09);
 }
 .flip-card {
   position: relative;
-  z-index: 1;
-}
-
-.flip-card {
-  position: relative;
-  z-index: 1;
-}
-
-.flip-card {
+  z-index: 1; /* 浮于水印之上且无背景色遮挡 */
   width: 100%;
   height: 100%;
-  position: relative;
   transform-style: preserve-3d;
   transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -391,6 +383,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
+  background: transparent; /* 修复：去除内部背景遮挡，改用透明色透出水印 */
 }
 .flip-front .quote-text {
   font-size: 32px;
@@ -428,7 +421,6 @@ onMounted(() => {
 }
 
 .flip-back {
-  background: var(--color-bg-card);
   transform: rotateX(180deg);
 }
 .flip-back .author-avatar {
