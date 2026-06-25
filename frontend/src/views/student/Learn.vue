@@ -66,26 +66,14 @@ const quotes = [
 ];
 
 const watermarkRows = [
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
-  "Do It. ".repeat(25).split(" "),
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
+  "Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It. Do It.",
 ];
 
 function pickRandom() {
@@ -236,9 +224,7 @@ onMounted(() => {
         <div class="quote-cell">
           <div class="watermark-layer">
             <div class="wm-row" v-for="(row, ri) in watermarkRows" :key="ri">
-              <span class="wm-phrase" v-for="(ch, ci) in row" :key="ci">{{
-                ch
-              }}</span>
+              <span class="wm-phrase">{{ row }}</span>
             </div>
           </div>
 
