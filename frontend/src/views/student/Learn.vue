@@ -331,21 +331,19 @@ onMounted(() => {
 }
 .wm-phrase {
   font-family: "Noto Sans SC", "Arial Black", sans-serif;
-  font-size: clamp(50px, 9vw, 100px);
-  font-weight: 900;
-  color: rgba(0, 0, 0, 0.05); /* 稍微加深点对比度以防白板显示不出 */
-  line-height: 1;
-  letter-spacing: 0.15em;
-  transition: color 0.6s ease;
+  font-size: 16px; /* 缩减为 16px 小字号水印 */
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.04);
+  line-height: 1.8;
+  letter-spacing: 0.3em; /* 适当空开间距 */
   user-select: none;
-  flex-shrink: 0;
-  margin-right: 0.8em;
+  white-space: nowrap;
 }
 .wm-row:nth-child(even) {
-  padding-left: 3em;
+  padding-left: 5em;
 }
 .quote-cell:hover .wm-phrase {
-  color: rgba(0, 0, 0, 0.09);
+  color: rgba(0, 0, 0, 0.07);
 }
 .flip-card {
   position: relative;
