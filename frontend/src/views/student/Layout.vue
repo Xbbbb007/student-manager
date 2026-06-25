@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, provide, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
@@ -36,7 +36,7 @@ interface ModuleTabItem {
 const moduleTabItems: ModuleTabItem[] = [
   { id: 'scores', label: '成绩' },
   { id: 'homework', label: '作业' },
-  { id: 'exams', label: '考试' },
+  { id: 'exams', label: '测试' },
   { id: 'mistakes', label: '错题本' },
   { id: 'schedule', label: '课表' },
 ]

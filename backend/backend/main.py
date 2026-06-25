@@ -1,4 +1,4 @@
-﻿"""FastAPI 主入口 - 智慧学生管理系统后端"""
+"""FastAPI 主入口 - 智慧学生管理系统后端"""
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +11,10 @@ from .routers.classes import router as classes_router
 from .routers.scores import router as scores_router
 from .routers.exams import router as exams_router
 from .routers.schedule import router as schedule_router
+from .routers.homework import router as homework_router
+from .routers.exam_schedule import router as exam_schedule_router
+from .routers.mistake import router as mistake_router
+from .routers.attendance import router as attendance_router
 from .services.auth import init_admin
 
 
@@ -45,6 +49,11 @@ app.include_router(classes_router)
 app.include_router(scores_router)
 app.include_router(exams_router)
 app.include_router(schedule_router)
+app.include_router(homework_router)
+app.include_router(exam_schedule_router)
+app.include_router(mistake_router)
+app.include_router(attendance_router)
+
 
 
 @app.get("/api/v1/health")

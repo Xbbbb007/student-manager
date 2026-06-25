@@ -5,6 +5,10 @@
 
 ---
 
+数据库 root 123456
+
+数据库名称student_manager
+
 ## 铁律（每次对话开始时必读）
 
 1. **一次只做一个阶段**，当前阶段未完成并得到用户确认前，禁止进入下一阶段
@@ -29,6 +33,7 @@
 ## 代码规范
 
 ### 前端
+
 - 组件用 `<script setup lang="ts">` + Composition API
 - 样式用 `<style scoped>`，全局变量在 `variables.scss`
 - 路由按模块组织：`/student/learn/*`、`/teacher/scores`、`/admin/*`
@@ -36,6 +41,7 @@
 - 提交作业用 Pinia store 管理用户状态
 
 ### 后端
+
 - 按模块组织 router：`routers/auth.py`、`routers/scores.py`、`routers/exams.py` 等
 - 数据库模型在 `models/`，Pydantic schema 在 `schemas/`
 - 所有接口加类型注解，确保 Swagger 文档完整
@@ -43,6 +49,7 @@
 - 权限检查：在 router 层校验 user_type + role + subject
 
 ### 数据库
+
 - 开发和生产统一用 MySQL（`student_manager`，root/123456）
 - 用 SQLAlchemy ORM 管理表结构
 - 种子数据通过 `seed_data.py` 维护

@@ -251,3 +251,123 @@ def delete_student(
     db.commit()
     return ApiResponse(message="删除成功")
 
+
+# ─── Profile & Homeroom Student management ────────────────────
+
+@router.get("/profile")
+def get_user_profile(
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    if not authorization:
+        raise HTTPException(401, detail="缺少认证信息")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(401, detail="Token 格式错误")
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(401, detail="Token 无效")
+    
+    user_type = payload.get("user_type")
+    user_id = int(payload.get("sub", 0))
+
+    if user_type == "student":
+        student = db.query(Student).filter(Student.id == user_id).first()
+        if not student:
+            raise HTTPException(404, detail="学生不存在")
+        # Get class name
+        from ..models.class_model import Class
+        cls = db.query(Class).filter(Class.id == student.class_id).first()
+        return ApiResponse(data={
+            "id": student.id,
+            "username": student.username,
+            "name": student.name,
+            "gender": student.gender.value if student.gender else None,
+            "class_id": student.class_id,
+            "class_name": cls.name if cls else "未分配",
+            "user_type": "student",
+        })
+    else:
+        staff = db.query(Staff).filter(Staff.id == user_id).first()
+        if not staff:
+            raise HTTPException(404, detail="教师不存在")
+        
+        # Check if they are a homeroom teacher
+        from ..models.class_model import Class
+        homeroom_cls = db.query(Class).filter(Class.homeroom_teacher_id == staff.id).first()
+
+        return ApiResponse(data={
+            "id": staff.id,
+            "username": staff.username,
+            "name": staff.name,
+            "role": staff.role.value,
+            "gender": staff.gender.value if staff.gender else None,
+            "subject": staff.subject.value if staff.subject else None,
+            "homeroom_class_id": homeroom_cls.id if homeroom_cls else None,
+            "homeroom_class_name": homeroom_cls.name if homeroom_cls else None,
+            "user_type": "staff",
+        })
+
+
+@router.get("/homeroom/students")
+def get_homeroom_students(
+    current_user: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    from ..models.class_model import Class
+    cls = db.query(Class).filter(Class.homeroom_teacher_id == current_user.id).first()
+    if not cls:
+        raise HTTPException(403, detail="您不是班主任，无权查看班级学生")
+    
+    students = db.query(Student).filter(Student.class_id == cls.id).all()
+    data = [
+        {
+            "id": s.id,
+            "username": s.username,
+            "name": s.name,
+            "gender": s.gender.value if s.gender else None,
+            "password_plain": s.password_plain or "",
+        }
+        for s in students
+    ]
+    return ApiResponse(data={
+        "class_id": cls.id,
+        "class_name": cls.name,
+        "students": data
+    })
+
+
+@router.put("/homeroom/students/{student_id}")
+def update_homeroom_student(
+    student_id: int,
+    body: dict,
+    current_user: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    from ..models.class_model import Class
+    cls = db.query(Class).filter(Class.homeroom_teacher_id == current_user.id).first()
+    if not cls:
+        raise HTTPException(403, detail="仅班主任可修改学生信息")
+    
+    student = db.query(Student).filter(Student.id == student_id, Student.class_id == cls.id).first()
+    if not student:
+        raise HTTPException(404, detail="学生不存在或非本班学生")
+    
+    if "name" in body:
+        student.name = body["name"] or student.name
+    if "gender" in body:
+        student.gender = Gender(body["gender"]) if body["gender"] else None
+    if "password" in body and body["password"]:
+        student.password_hash = hash_password(body["password"])
+        student.password_plain = body["password"]
+        
+    db.commit()
+    db.refresh(student)
+    return ApiResponse(message="修改成功", data={
+        "id": student.id,
+        "name": student.name,
+        "gender": student.gender.value if student.gender else None,
+        "password_plain": student.password_plain or "",
+    })
+
+

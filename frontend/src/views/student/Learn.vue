@@ -3,6 +3,9 @@ import { ref, inject, onMounted, nextTick } from "vue";
 import gsap from "gsap";
 import Scores from "./Scores.vue";
 import Schedule from "./Schedule.vue";
+import Homework from "./Homework.vue";
+import ExamSchedule from "./ExamSchedule.vue";
+import Mistakes from "./Mistakes.vue";
 
 const activeTab = ref("");
 const quoteVisible = ref(true);
@@ -258,7 +261,7 @@ onMounted(() => {
           v-for="item in [
             { id: 'scores', label: '成绩' },
             { id: 'homework', label: '作业' },
-            { id: 'exams', label: '考试' },
+            { id: 'exams', label: '测试' },
             { id: 'mistakes', label: '错题本' },
             { id: 'schedule', label: '课表' },
           ]"
@@ -275,6 +278,9 @@ onMounted(() => {
       <div class="detail-body">
         <Scores v-if="activeTab === 'scores'" activeTab="scores" />
         <Schedule v-else-if="activeTab === 'schedule'" />
+        <Homework v-else-if="activeTab === 'homework'" />
+        <ExamSchedule v-else-if="activeTab === 'exams'" />
+        <Mistakes v-else-if="activeTab === 'mistakes'" />
         <div v-else class="detail-content" v-html="detailHTML"></div>
       </div>
     </div>

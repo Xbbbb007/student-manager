@@ -1,4 +1,4 @@
-﻿import http from './http'
+import http from './http'
 import type { ApiResponse } from '../types'
 
 export interface UserRecord {
@@ -65,3 +65,19 @@ export function deleteUserApi(id: number, body?: { user_type?: string }) {
 export function updateUserApi(id: number, data: { name?: string; password?: string; user_type?: string }) {
   return http.put<any, ApiResponse<UserRecord>>('/users/legacy/' + id, data)
 }
+
+/** 获取个人资料 */
+export function getUserProfileApi() {
+  return http.get<any, ApiResponse<any>>('/users/profile')
+}
+
+/** 班主任获取班级学生 */
+export function getHomeroomStudentsApi() {
+  return http.get<any, ApiResponse<{ class_id: number; class_name: string; students: any[] }>>('/users/homeroom/students')
+}
+
+/** 班主任更新学生信息 */
+export function updateHomeroomStudentApi(studentId: number, data: { name?: string; gender?: string; password?: string }) {
+  return http.put<any, ApiResponse<any>>(`/users/homeroom/students/${studentId}`, data)
+}
+
