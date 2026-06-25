@@ -5,5 +5,6 @@ from .class_model import Class
 from .exam import Exam
 from .score import Score
 from .schedule import Schedule
+from .teacher_class import TeacherClass
 
-__all__ = ["StaffRole", "Gender", "Subject", "Staff", "Student", "Class", "Exam", "Score", "Schedule"]
+__all__ = ["StaffRole", "Gender", "Subject", "Staff", "Student", "Class", "Exam", "Score", "Schedule", "TeacherClass"]

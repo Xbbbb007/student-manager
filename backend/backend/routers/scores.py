@@ -1,4 +1,4 @@
-﻿"""
+"""
 成绩管理路由 — 学生端 + 教师端
 """
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -13,6 +13,7 @@ from ..models.class_model import Class
 from ..models.exam import Exam
 from ..models.score import Score
 from ..models.staff import Staff
+from ..models.teacher_class import TeacherClass
 from ..models.enums import Subject, StaffRole
 from ..schemas.score import (
     StudentScoresResponse, ExamWithScores, ScoreItem,
@@ -582,4 +583,437 @@ def get_class_stats(
         "class_name": class_obj.name,
         "student_count": student_count,
         "stats": stats,
+    })
+
+
+@router.get("/subject-trend")
+def get_subject_trend(
+    class_id: int,
+    subjects: Optional[str] = None,
+    current_user: Staff = Depends(get_current_teacher),
+    db: Session = Depends(get_db),
+):
+    """教师端：获取某班级某科目的历次考试均分趋势（本科目对比 / 跨科目对比）
+
+    - subjects: 逗号分隔的科目 key，如 "chinese" 或 "chinese,math"
+    - 科任老师只能查自己科目，班主任和管理员可查所有科目
+    """
+    class_obj = db.query(Class).filter(Class.id == class_id).first()
+    if not class_obj:
+        raise HTTPException(404, detail="班级不存在")
+
+    # 解析科目列表
+    requested = [s.strip() for s in subjects.split(",") if s.strip()] if subjects else ["chinese"]
+
+    # 权限过滤
+    allowed_subjects = set(SUBJECT_KEYS)
+    if current_user.role != StaffRole.ADMIN:
+        is_homeroom = class_obj.homeroom_teacher_id == current_user.id
+        if not is_homeroom and current_user.subject:
+            allowed_subjects = {current_user.subject.value}
+
+    valid_subjects = [s for s in requested if s in allowed_subjects]
+    if not valid_subjects:
+        raise HTTPException(403, detail="无权查看所选科目的趋势")
+
+    # 获取该班级的所有考试（按日期排序）
+    exams = (
+        db.query(Exam)
+        .filter(Exam.class_id == class_id)
+        .order_by(Exam.exam_date.asc(), Exam.id.asc())
+        .all()
+    )
+
+    labels = []
+    series: dict = {s: [] for s in valid_subjects}
+
+    for exam in exams:
+        labels.append(exam.name)
+        for subj_key in valid_subjects:
+            score_vals = [
+                s.score for s in db.query(Score.score).filter(
+                    Score.exam_id == exam.id,
+                    Score.subject == Subject(subj_key),
+                ).all()
+            ]
+            avg = round(sum(score_vals) / len(score_vals), 1) if score_vals else None
+            series[subj_key].append(avg)
+
+    return ApiResponse(data={
+        "class_id": class_id,
+        "class_name": class_obj.name,
+        "labels": labels,
+        "series": series,
+        "subjects": {k: SUBJECT_MAP.get(k, k) for k in valid_subjects},
+    })
+
+
+# ═══════════════════════════════════════════════════════
+# 教师端新 API — 班级筛选 + 仪表盘
+# ═══════════════════════════════════════════════════════
+
+@router.get("/teacher/classes")
+def get_teacher_classes(
+    current_user: Staff = Depends(get_current_teacher),
+    db: Session = Depends(get_db),
+):
+    """获取教师所教班级列表（管理员返回全部）"""
+    if current_user.role == StaffRole.ADMIN:
+        classes = db.query(Class).order_by(Class.id).all()
+        class_list = []
+        for c in classes:
+            student_count = db.query(Student).filter(Student.class_id == c.id).count()
+            class_list.append({
+                "id": c.id,
+                "name": c.name,
+                "section": c.section,
+                "grade": c.grade,
+                "student_count": student_count,
+                "homeroom_teacher_id": c.homeroom_teacher_id,
+            })
+        return ApiResponse(data={
+            "classes": class_list,
+            "is_admin": True,
+        })
+
+    # 非管理员：查找自己是班主任的班级
+    homeroom_classes = db.query(Class).filter(Class.homeroom_teacher_id == current_user.id).all()
+
+    # 查找自己在 teacher_classes 里有授课的班级
+    tcs = (
+        db.query(Class)
+        .join(TeacherClass, Class.id == TeacherClass.class_id)
+        .filter(TeacherClass.teacher_id == current_user.id)
+        .all()
+    )
+
+    # 去重并排序
+    seen = set()
+    my_classes = []
+    for c in (homeroom_classes + tcs):
+        if c.id not in seen:
+            seen.add(c.id)
+            my_classes.append(c)
+    my_classes.sort(key=lambda x: x.id)
+
+    class_list = []
+    for c in my_classes:
+        student_count = db.query(Student).filter(Student.class_id == c.id).count()
+        class_list.append({
+            "id": c.id,
+            "name": c.name,
+            "section": c.section,
+            "grade": c.grade,
+            "student_count": student_count,
+            "homeroom_teacher_id": c.homeroom_teacher_id,
+        })
+
+    return ApiResponse(data={
+        "classes": class_list,
+        "is_admin": False,
+    })
+
+
+@router.get("/teacher/exams")
+def get_teacher_exams(
+    class_ids: str,
+    current_user: Staff = Depends(get_current_teacher),
+    db: Session = Depends(get_db),
+):
+    """获取多个班级的考试列表（按名称去重合并）
+
+    class_ids: 逗号分隔的班级 ID，如 "1,2"
+    """
+    ids = [int(x.strip()) for x in class_ids.split(",") if x.strip().isdigit()]
+    if not ids:
+        return ApiResponse(data=[])
+
+    exams = (
+        db.query(Exam)
+        .filter(Exam.class_id.in_(ids))
+        .order_by(Exam.exam_date.asc(), Exam.id.asc())
+        .all()
+    )
+
+    # 按 (name, exam_date) 分组
+    grouped = {}
+    for exam in exams:
+        key = (exam.name, str(exam.exam_date) if exam.exam_date else "")
+        if key not in grouped:
+            grouped[key] = {
+                "name": exam.name,
+                "exam_date": str(exam.exam_date) if exam.exam_date else None,
+                "exam_class_ids": [],
+            }
+        grouped[key]["exam_class_ids"].append({
+            "exam_id": exam.id,
+            "class_id": exam.class_id,
+        })
+
+    # 转为列表
+    result = []
+    for (name, _), group in grouped.items():
+        result.append(group)
+
+    return ApiResponse(data=result)
+
+
+@router.get("/teacher-dashboard")
+def get_teacher_dashboard(
+    exam_ids: str,
+    subject: str,
+    current_user: Staff = Depends(get_current_teacher),
+    db: Session = Depends(get_db),
+):
+    """教师仪表盘：基础统计 + 前十名 + 波动TOP5 + 需关注学生
+
+    exam_ids: 逗号分隔的考试 ID（单班传1个，总体传多个）
+    subject:  科目 key
+    """
+    ids = [int(x.strip()) for x in exam_ids.split(",") if x.strip().isdigit()]
+    if not ids:
+        raise HTTPException(400, detail="缺少考试 ID")
+
+    is_multi = len(ids) > 1
+
+    # ── 收集所有成绩数据 ──────────────────────
+    all_scores = (
+        db.query(Score)
+        .filter(Score.exam_id.in_(ids), Score.subject == Subject(subject))
+        .all()
+    )
+    if not all_scores:
+        return ApiResponse(data={
+            "summary": None,
+            "comparison": [],
+            "top_students": [],
+            "fluctuation": [],
+            "needs_attention": [],
+        })
+
+    # ── 1. Summary 基础统计 ───────────────────
+    score_vals = [s.score for s in all_scores]
+    total_count = len(score_vals)
+    summary = {
+        "total_students": total_count,
+        "avg_score": round(sum(score_vals) / total_count, 1),
+        "max_score": max(score_vals),
+        "min_score": min(score_vals),
+        "pass_rate": round(sum(1 for v in score_vals if v >= 60) / total_count * 100, 1),
+        "excellent_rate": round(sum(1 for v in score_vals if v >= 90) / total_count * 100, 1),
+    }
+
+    # ── 2. Comparison 班级对比（仅多考试时） ──
+    comparison = []
+    if is_multi:
+        for eid in ids:
+            exam = db.query(Exam).filter(Exam.id == eid).first()
+            if not exam:
+                continue
+            class_obj = db.query(Class).filter(Class.id == exam.class_id).first()
+            exam_scores = [s.score for s in all_scores if s.exam_id == eid]
+            if not exam_scores:
+                continue
+            n = len(exam_scores)
+            comparison.append({
+                "exam_id": eid,
+                "class_id": exam.class_id,
+                "class_name": class_obj.name if class_obj else "",
+                "total_students": n,
+                "avg_score": round(sum(exam_scores) / n, 1),
+                "max_score": max(exam_scores),
+                "min_score": min(exam_scores),
+                "pass_rate": round(sum(1 for v in exam_scores if v >= 60) / n * 100, 1),
+                "excellent_rate": round(sum(1 for v in exam_scores if v >= 90) / n * 100, 1),
+            })
+
+    # ── 构建辅助映射 ──────────────────────────
+    student_map = {
+        s.id: s for s in db.query(Student)
+        .filter(Student.id.in_([s.student_id for s in all_scores]))
+        .all()
+    }
+    class_cache = {}
+    def get_class_name(class_id):
+        if class_id not in class_cache:
+            c = db.query(Class).filter(Class.id == class_id).first()
+            class_cache[class_id] = c.name if c else ""
+        return class_cache[class_id]
+
+    # ── 3. Top 10 前十名 ─────────────────────
+    top_students = []
+    for eid in ids:
+        exam = db.query(Exam).filter(Exam.id == eid).first()
+        if not exam:
+            continue
+
+        # 找上一次考试（同班级、同科目、日期更早）
+        prev_exam = (
+            db.query(Exam)
+            .filter(Exam.class_id == exam.class_id,
+                    Exam.exam_date < exam.exam_date)
+            .order_by(Exam.exam_date.desc())
+            .first()
+        )
+
+        current_scores = [s for s in all_scores if s.exam_id == eid]
+        prev_scores = {}
+        if prev_exam:
+            for ps in db.query(Score).filter(
+                Score.exam_id == prev_exam.id,
+                Score.subject == Subject(subject),
+            ).all():
+                prev_scores[ps.student_id] = ps
+
+        for s in current_scores:
+            stu = student_map.get(s.student_id)
+            if not stu:
+                continue
+            prev_s = prev_scores.get(s.student_id)
+            top_students.append({
+                "student_id": s.student_id,
+                "student_name": stu.name,
+                "username": stu.username,
+                "score": s.score,
+                "class_name": get_class_name(exam.class_id),
+                "class_rank": s.class_rank,
+                "rank_change": (prev_s.class_rank - s.class_rank) if prev_s and prev_s.class_rank else None,
+                "score_change": round(s.score - prev_s.score, 1) if prev_s else None,
+            })
+
+    top_students.sort(key=lambda x: x["score"], reverse=True)
+    top_students = top_students[:10]
+
+    # ── 4. Fluctuation 波动最大 TOP5 ─────────
+    fluctuation_map = {}
+    for eid in ids:
+        exam = db.query(Exam).filter(Exam.id == eid).first()
+        if not exam:
+            continue
+
+        prev_exam = (
+            db.query(Exam)
+            .filter(Exam.class_id == exam.class_id,
+                    Exam.exam_date < exam.exam_date)
+            .order_by(Exam.exam_date.desc())
+            .first()
+        )
+        if not prev_exam:
+            continue
+
+        current_scores = [s for s in all_scores if s.exam_id == eid]
+        prev_scores = {}
+        for ps in db.query(Score).filter(
+            Score.exam_id == prev_exam.id,
+            Score.subject == Subject(subject),
+        ).all():
+            prev_scores[ps.student_id] = ps
+
+        for s in current_scores:
+            prev_s = prev_scores.get(s.student_id)
+            if not prev_s:
+                continue
+            change = round(s.score - prev_s.score, 1)
+            abs_change = abs(change)
+            # 同学生取最大波动
+            if s.student_id not in fluctuation_map or abs_change > abs(fluctuation_map[s.student_id]["score_change"]):
+                stu = student_map.get(s.student_id)
+                if not stu:
+                    continue
+                fluctuation_map[s.student_id] = {
+                    "student_id": s.student_id,
+                    "student_name": stu.name,
+                    "username": stu.username,
+                    "score": s.score,
+                    "prev_score": prev_s.score,
+                    "score_change": change,
+                    "class_rank": s.class_rank,
+                    "prev_class_rank": prev_s.class_rank,
+                    "rank_change": (prev_s.class_rank - s.class_rank) if (prev_s.class_rank and s.class_rank) else None,
+                    "class_name": get_class_name(exam.class_id),
+                }
+
+    fluctuation = sorted(
+        fluctuation_map.values(),
+        key=lambda x: abs(x["score_change"]),
+        reverse=True,
+    )[:5]
+
+    # ── 5. Needs Attention 需关注学生 ─────────
+    # 连续两次分数下降的学生
+    attention_map = {}
+    for eid in ids:
+        exam = db.query(Exam).filter(Exam.id == eid).first()
+        if not exam:
+            continue
+
+        prev_exam = (
+            db.query(Exam)
+            .filter(Exam.class_id == exam.class_id,
+                    Exam.exam_date < exam.exam_date)
+            .order_by(Exam.exam_date.desc())
+            .first()
+        )
+        if not prev_exam:
+            continue
+
+        prev_prev_exam = (
+            db.query(Exam)
+            .filter(Exam.class_id == exam.class_id,
+                    Exam.exam_date < prev_exam.exam_date)
+            .order_by(Exam.exam_date.desc())
+            .first()
+        )
+        if not prev_prev_exam:
+            continue
+
+        current_scores = {s.student_id: s for s in all_scores if s.exam_id == eid}
+
+        prev_scores = {}
+        for ps in db.query(Score).filter(
+            Score.exam_id == prev_exam.id,
+            Score.subject == Subject(subject),
+        ).all():
+            prev_scores[ps.student_id] = ps
+
+        prev_prev_scores = {}
+        for pps in db.query(Score).filter(
+            Score.exam_id == prev_prev_exam.id,
+            Score.subject == Subject(subject),
+        ).all():
+            prev_prev_scores[pps.student_id] = pps
+
+        for sid, curr_s in current_scores.items():
+            prev_s = prev_scores.get(sid)
+            prev_prev_s = prev_prev_scores.get(sid)
+            if not prev_s or not prev_prev_s:
+                continue
+
+            # 连续两次下降
+            if curr_s.score < prev_s.score and prev_s.score < prev_prev_s.score:
+                stu = student_map.get(sid)
+                if not stu:
+                    continue
+                attention_map[sid] = {
+                    "student_id": sid,
+                    "student_name": stu.name,
+                    "username": stu.username,
+                    "current_score": curr_s.score,
+                    "prev_score": prev_s.score,
+                    "prev_prev_score": prev_prev_s.score,
+                    "trend": [
+                        round(prev_s.score - prev_prev_s.score, 1),
+                        round(curr_s.score - prev_s.score, 1),
+                    ],
+                    "class_name": get_class_name(exam.class_id),
+                }
+
+    needs_attention = list(attention_map.values())
+
+    return ApiResponse(data={
+        "summary": summary,
+        "comparison": comparison,
+        "top_students": top_students,
+        "fluctuation": fluctuation,
+        "needs_attention": needs_attention,
     })

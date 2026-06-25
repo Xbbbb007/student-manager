@@ -23,20 +23,29 @@ const periods = [
 ];
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string }> = {
-  chinese: { bg: "#2C2D35", text: "#FFFFFF" },
-  math: { bg: "#D1FAE5", text: "#065F46" },
-  english: { bg: "#FEF3C7", text: "#92400E" },
-  science: { bg: "#EDE9FE", text: "#5B21B6" },
-  ethics: { bg: "#FCE7F3", text: "#9D174D" },
-  pe: { bg: "#FFEDD5", text: "#9A3412" },
-  music: { bg: "#FEE2E2", text: "#991B1B" },
-  art: { bg: "#CFFAFE", text: "#155E75" },
-  it: { bg: "#E0E7FF", text: "#3730A3" },
-  "self-study": { bg: "#F3F4F6", text: "#6B7280" },
+  chinese: { bg: "#EFF6FF", text: "#1D4ED8" },
+  math: { bg: "#ECFDF5", text: "#047857" },
+  english: { bg: "#FFFBEB", text: "#B45309" },
+  science: { bg: "#F5F3FF", text: "#6D28D9" },
+  ethics: { bg: "#FDF2F8", text: "#BE185D" },
+  pe: { bg: "#FFF7ED", text: "#C2410C" },
+  music: { bg: "#FEF2F2", text: "#B91C1C" },
+  art: { bg: "#ECFEFF", text: "#0E7490" },
+  it: { bg: "#EEF2FF", text: "#4338CA" },
+  "self-study": { bg: "#F9FAFB", text: "#4B5563" },
 };
 
 const schedule = ref<ScheduleItem[]>([]);
 const loading = ref(true);
+const viewMode = ref<"week" | "day">("week");
+
+// 辅助函数获取当前的星期几（1-5）
+const getTodayDay = () => {
+  const d = new Date().getDay();
+  if (d === 0 || d === 6) return 1;
+  return d;
+};
+const selectedDay = ref<number>(getTodayDay());
 
 const grid = computed(() => {
   const map: Record<string, ScheduleItem | null> = {};
@@ -46,8 +55,19 @@ const grid = computed(() => {
   return map;
 });
 
+const dayCourses = computed(() => {
+  return schedule.value
+    .filter((s) => s.day_of_week === selectedDay.value)
+    .sort((a, b) => a.period - b.period);
+});
+
 function getStyle(sub: string) {
   return SUBJECT_COLORS[sub] || { bg: "#F3F4F6", text: "#6B7280" };
+}
+
+function getPeriodTime(periodNum: number) {
+  const p = periods.find((x) => x.label === periodNum);
+  return p ? p.time : "";
 }
 
 onMounted(async () => {
@@ -64,10 +84,37 @@ onMounted(async () => {
 
 <template>
   <div class="schedule-page" v-loading="loading">
-    <div class="schedule-grid">
+    <!-- 顶部排控制条 -->
+    <div class="schedule-ctrls">
+      <el-radio-group v-model="viewMode" size="default">
+        <el-radio-button value="week">周课表</el-radio-button>
+        <el-radio-button value="day">日课表</el-radio-button>
+      </el-radio-group>
+
+      <!-- 仅在日视图下呈现星期 Tabs -->
+      <div v-if="viewMode === 'day'" class="day-tabs">
+        <span 
+          v-for="(dayName, idx) in days" 
+          :key="idx" 
+          :class="['day-tab-item', { active: selectedDay === idx + 1 }]"
+          @click="selectedDay = idx + 1"
+        >
+          {{ dayName }}
+        </span>
+      </div>
+    </div>
+
+    <!-- 1. 周课表 (网格视图) -->
+    <div v-if="viewMode === 'week'" class="schedule-grid animate-fade">
       <div class="grid-header">
         <div class="th-time"></div>
-        <div v-for="(d, i) in days" :key="i" class="th-day" :class="{ 'today': i === 2 }">{{ d }}</div>
+        <div 
+          v-for="(d, i) in days" 
+          :key="i" 
+          :class="['th-day', { 'today': (i + 1) === getTodayDay() }]"
+        >
+          {{ d }}
+        </div>
       </div>
       <div v-for="p in periods" :key="p.label" class="grid-row">
         <div class="td-time">
@@ -84,16 +131,81 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- 2. 日课表 (垂直时间线 Timeline) -->
+    <div v-else class="day-timeline-view animate-fade">
+      <div v-if="dayCourses.length === 0" class="no-courses">
+        <el-empty description="今天没有安排课程哦" :image-size="80" />
+      </div>
+      <div v-else class="timeline-container">
+        <el-timeline>
+          <el-timeline-item
+            v-for="c in dayCourses"
+            :key="c.id"
+            :timestamp="getPeriodTime(c.period)"
+            placement="top"
+            :color="getStyle(c.subject).text"
+          >
+            <div class="timeline-card" :style="{ borderLeft: `4px solid ${getStyle(c.subject).text}`, background: getStyle(c.subject).bg }">
+              <div class="card-left">
+                <span class="period-tag" :style="{ background: getStyle(c.subject).text, color: '#FFFFFF' }">
+                  第 {{ c.period }} 节
+                </span>
+                <span class="subject-title" :style="{ color: getStyle(c.subject).text }">
+                  {{ c.subject_name }}
+                </span>
+              </div>
+              <div class="card-right">
+                <span class="teacher-info">授课教师：<strong>{{ c.teacher_name }}</strong></span>
+              </div>
+            </div>
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .schedule-page { padding: 0; }
+.schedule-ctrls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.day-tabs {
+  display: flex;
+  background: #F3F4F6;
+  padding: 4px;
+  border-radius: 6px;
+}
+.day-tab-item {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4B5563;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.day-tab-item:hover {
+  color: #1F2937;
+}
+.day-tab-item.active {
+  background: #FFFFFF;
+  color: #334EAC;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 周视图样式 */
 .schedule-grid {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 .grid-header {
   display: grid;
@@ -160,5 +272,67 @@ onMounted(async () => {
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 .course-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
-.course-teacher { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+.course-teacher { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+
+/* Timeline 日视图样式 */
+.day-timeline-view {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 30px 40px;
+  box-shadow: var(--shadow-sm);
+}
+.timeline-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.timeline-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.timeline-card:hover {
+  transform: translateX(2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.period-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+.subject-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.card-right {
+  font-size: 13px;
+  color: #4B5563;
+}
+.teacher-info strong {
+  color: #1F2937;
+}
+.no-courses {
+  padding: 40px 0;
+}
+
+/* 动效 */
+.animate-fade {
+  animation: fadeIn 0.35s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>

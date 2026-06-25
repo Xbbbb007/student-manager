@@ -51,3 +51,22 @@ export function batchSaveScores(items: Array<{ student_id: number; exam_id: numb
 export function getClassStats(examId: number) {
   return http.get(`/scores/class-stats/${examId}`)
 }
+
+export function getSubjectTrend(classId: number, subjects?: string) {
+  const params: Record<string, any> = { class_id: classId }
+  if (subjects) params.subjects = subjects
+  return http.get("/scores/subject-trend", { params })
+}
+
+// 教师端新 API
+export function getTeacherClasses() {
+  return http.get("/scores/teacher/classes")
+}
+
+export function getTeacherExams(classIds: string) {
+  return http.get("/scores/teacher/exams", { params: { class_ids: classIds } })
+}
+
+export function getTeacherDashboard(examIds: string, subject: string) {
+  return http.get("/scores/teacher-dashboard", { params: { exam_ids: examIds, subject } })
+}
