@@ -181,6 +181,25 @@ def create_my_leave_request(
     return ApiResponse(message="请假申请已提交，等待班主任审核", data={"id": lv.id})
 
 
+@router.delete("/my/leaves/{request_id}")
+def delete_my_leave_request(
+    request_id: int,
+    current_user: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """学生：在线撤销/删除请假单"""
+    lv = db.query(LeaveRequest).filter(
+        LeaveRequest.id == request_id,
+        LeaveRequest.student_id == current_user.id
+    ).first()
+    if not lv:
+        raise HTTPException(404, detail="请假单不存在或无权操作")
+    db.delete(lv)
+    db.commit()
+    return ApiResponse(message="请假记录已删除")
+
+
+
 # ─── 教师端接口 ───────────────────────────────────────────────
 
 @router.get("/teacher/class-logs")

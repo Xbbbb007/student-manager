@@ -21,6 +21,11 @@ export function createMyLeaveRequest(data: {
   return http.post("/attendance/my/leaves", data)
 }
 
+export function deleteMyLeaveRequest(id: number) {
+  return http.delete(`/attendance/my/leaves/${id}`)
+}
+
+
 // 教师端 API
 export function getTeacherClassLogs() {
   return http.get("/attendance/teacher/class-logs")
