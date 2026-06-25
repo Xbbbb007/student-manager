@@ -65,16 +65,6 @@ const quotes = [
   },
 ];
 
-const watermarkRows = [
-  "SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART",
-  "SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM",
-  "ORPHISM SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY",
-  "GEOMETRIE ART SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME COULEUR",
-  "COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME",
-  "RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM SIMULTANEOUS",
-  "SONIA DELAUNAY ORPHISM SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART",
-  "SIMULTANEOUS RYTHME COULEUR GEOMETRIE ART SONIA DELAUNAY ORPHISM",
-];
 
 function pickRandom() {
   const q = quotes[Math.floor(Math.random() * quotes.length)];
@@ -222,10 +212,27 @@ onMounted(() => {
     <div v-if="quoteVisible" id="heroSection" class="hero">
       <div id="unifiedGrid" class="unified-grid">
         <div class="quote-cell">
-          <div class="watermark-layer">
-            <div class="wm-row" v-for="(row, ri) in watermarkRows" :key="ri">
-              <span class="wm-phrase">{{ row }}</span>
-            </div>
+          <!-- 索尼娅·德劳内风格的同心圆与几何艺术背景图层 -->
+          <div class="delaunay-art-layer">
+            <svg class="art-svg" viewBox="0 0 800 320" width="100%" height="100%" preserveAspectRatio="none">
+              <!-- 左侧大同心圆环 -->
+              <circle cx="100" cy="160" r="140" fill="none" stroke="rgba(51, 78, 172, 0.05)" stroke-width="24" />
+              <circle cx="100" cy="160" r="100" fill="none" stroke="rgba(245, 158, 11, 0.04)" stroke-width="18" />
+              <circle cx="100" cy="160" r="60" fill="none" stroke="rgba(16, 185, 129, 0.04)" stroke-width="12" />
+              
+              <!-- 右侧交错同心圆弧与几何扇区 -->
+              <circle cx="700" cy="160" r="160" fill="none" stroke="rgba(16, 185, 129, 0.04)" stroke-width="32" stroke-dasharray="200 100" />
+              <circle cx="700" cy="160" r="100" fill="none" stroke="rgba(51, 78, 172, 0.04)" stroke-width="20" />
+              <circle cx="700" cy="160" r="50" fill="none" stroke="rgba(239, 68, 68, 0.03)" stroke-width="14" />
+
+              <!-- 中间横穿的对比彩带 -->
+              <path d="M 0 160 L 800 160" stroke="rgba(51, 78, 172, 0.02)" stroke-width="40" />
+              <path d="M 0 180 L 800 180" stroke="rgba(245, 158, 11, 0.02)" stroke-width="20" />
+              
+              <!-- 辅助装饰几何对比弧线 -->
+              <path d="M 300 60 A 120 120 0 0 1 500 60" fill="none" stroke="rgba(239, 68, 68, 0.04)" stroke-width="16" />
+              <path d="M 350 260 A 100 100 0 0 0 450 260" fill="none" stroke="rgba(51, 78, 172, 0.03)" stroke-width="12" />
+            </svg>
           </div>
 
           <div :class="['flip-card', { flipped: isFlipped }]" id="flipCard">
@@ -310,40 +317,20 @@ onMounted(() => {
   perspective: 1200px;
   position: relative; /* 核心修复：添加相对定位做定位上下文 */
 }
-/* 水印层 - MiMo官网风格大字铺满 */
-.watermark-layer {
+/* 索尼娅·德劳内几何背景图层 */
+.delaunay-art-layer {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   pointer-events: none;
-  z-index: 0; /* 在卡片内容下层 */
-  overflow: hidden;
-  padding: 10px 0;
-}
-.wm-row {
-  display: flex;
-  justify-content: flex-start;
-  gap: 0;
-  white-space: nowrap;
+  z-index: 0;
   overflow: hidden;
 }
-.wm-phrase {
-  font-family: "Noto Sans SC", "Arial Black", sans-serif;
-  font-size: 16px; /* 缩减为 16px 小字号水印 */
-  font-weight: 800;
-  color: rgba(0, 0, 0, 0.04);
-  line-height: 1.8;
-  letter-spacing: 0.3em; /* 适当空开间距 */
-  user-select: none;
-  white-space: nowrap;
+.art-svg {
+  opacity: 0.9;
+  transition: opacity 0.4s ease;
 }
-.wm-row:nth-child(even) {
-  padding-left: 5em;
-}
-.quote-cell:hover .wm-phrase {
-  color: rgba(0, 0, 0, 0.07);
+.quote-cell:hover .art-svg {
+  opacity: 1.0;
 }
 .flip-card {
   position: relative;
