@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import { getTeacherClassLogs, takeRollCall, getTeacherLeaves, approveLeaveRequest } from "../../api/attendance";
 import { getTeacherClasses } from "../../api/scores";
-import { Notebook, CircleCheck, EditPen, Calendar, Timer, Checked } from "@element-plus/icons-vue";
+import { Checked } from "@element-plus/icons-vue";
 
 interface ClassItem {
   id: number;

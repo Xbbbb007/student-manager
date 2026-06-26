@@ -205,7 +205,7 @@ watch([moduleActiveTab, moduleMode], () => {
             <!-- 模块标签 -->
             <ul v-else class="nav-links" ref="navListRef" key="module">
               <li
-                v-for="(item, index) in moduleTabItems"
+                v-for="item in moduleTabItems"
                 :key="item.id"
                 class="nav-item"
               >

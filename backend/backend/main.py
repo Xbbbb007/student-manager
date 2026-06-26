@@ -15,6 +15,7 @@ from .routers.homework import router as homework_router
 from .routers.exam_schedule import router as exam_schedule_router
 from .routers.mistake import router as mistake_router
 from .routers.attendance import router as attendance_router
+from .routers.teaching import router as teaching_router
 from .services.auth import init_admin
 
 
@@ -53,6 +54,7 @@ app.include_router(homework_router)
 app.include_router(exam_schedule_router)
 app.include_router(mistake_router)
 app.include_router(attendance_router)
+app.include_router(teaching_router)
 
 
 

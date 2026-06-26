@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useUserStore } from "../../stores/user";
 import { getTeacherClasses } from "../../api/scores";
@@ -9,7 +9,7 @@ import {
   getHomeworkSubmissions,
   gradeSubmission,
 } from "../../api/homework";
-import { Plus, List, EditPen, Checked, PieChart } from "@element-plus/icons-vue";
+import { Plus, EditPen } from "@element-plus/icons-vue";
 
 const userStore = useUserStore();
 const userInfo = userStore.userInfo;

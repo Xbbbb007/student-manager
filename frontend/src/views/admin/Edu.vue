@@ -4,7 +4,9 @@ import HomeworkOverview from "./HomeworkOverview.vue";
 import AdminExamSchedule from "./AdminExamSchedule.vue";
 import AdminMistakes from "./AdminMistakes.vue";
 import AdminAttendance from "./AdminAttendance.vue";
-import { Monitor, Calendar, Coordinate, Notebook, Checked } from "@element-plus/icons-vue";
+import SmartSchedule from "./SmartSchedule.vue";
+import DataDashboard from "./DataDashboard.vue";
+import { Monitor, Calendar, Coordinate, Notebook, Checked, DataLine } from "@element-plus/icons-vue";
 
 const activeTab = ref("homework");
 </script>
@@ -51,6 +53,13 @@ const activeTab = ref("homework");
             <el-icon><Checked /></el-icon>
             <span>考勤统计</span>
           </li>
+          <li 
+            :class="['menu-item', { active: activeTab === 'dashboard' }]"
+            @click="activeTab = 'dashboard'"
+          >
+            <el-icon><DataLine /></el-icon>
+            <span>数据大屏</span>
+          </li>
         </ul>
       </aside>
 
@@ -58,13 +67,11 @@ const activeTab = ref("homework");
       <main class="edu-main-body">
         <div class="edu-card">
           <HomeworkOverview v-if="activeTab === 'homework'" />
+          <SmartSchedule v-else-if="activeTab === 'schedule'" />
           <AdminExamSchedule v-else-if="activeTab === 'exams'" />
           <AdminMistakes v-else-if="activeTab === 'mistakes'" />
           <AdminAttendance v-else-if="activeTab === 'attendance'" />
-          
-          <div v-else class="placeholder-view">
-            <el-empty description="智能课表排课系统开发中..." />
-          </div>
+          <DataDashboard v-else-if="activeTab === 'dashboard'" />
         </div>
       </main>
     </div>

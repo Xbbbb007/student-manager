@@ -123,9 +123,9 @@ onMounted(async () => {
         </div>
         <div v-for="d in 5" :key="d" class="td-cell">
           <template v-if="grid[`${d}-${p.label}`]">
-            <div class="course-block" :style="{ background: getStyle(grid[`${d}-${p.label}`].subject).bg, color: getStyle(grid[`${d}-${p.label}`].subject).text }">
-              <div class="course-name">{{ grid[`${d}-${p.label}`].subject_name }}</div>
-              <div class="course-teacher">{{ grid[`${d}-${p.label}`].teacher_name }}</div>
+            <div class="course-block" :style="{ background: getStyle(grid[`${d}-${p.label}`]?.subject || '').bg, color: getStyle(grid[`${d}-${p.label}`]?.subject || '').text }">
+              <div class="course-name">{{ grid[`${d}-${p.label}`]?.subject_name }}</div>
+              <div class="course-teacher">{{ grid[`${d}-${p.label}`]?.teacher_name }}</div>
             </div>
           </template>
         </div>

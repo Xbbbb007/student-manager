@@ -511,19 +511,19 @@ onMounted(loadData);
                     <button
                       class="ab"
                       title="改名"
-                      @click="openPop($event, 'edit', u)"
+                      @click="openPop('edit', u)"
                     >
                       ✏️</button
                     ><button
                       class="ab"
                       title="重置密码"
-                      @click="openPop($event, 'reset', u)"
+                      @click="openPop('reset', u)"
                     >
                       🔑</button
                     ><button
                       class="ab ad"
                       title="删除"
-                      @click="openPop($event, 'delete', u)"
+                      @click="openPop('delete', u)"
                     >
                       🗑️
                     </button>
@@ -605,19 +605,19 @@ onMounted(loadData);
                     <button
                       class="ab"
                       title="改名"
-                      @click="openPop($event, 'edit', u)"
+                      @click="openPop('edit', u)"
                     >
                       ✏️</button
                     ><button
                       class="ab"
                       title="重置密码"
-                      @click="openPop($event, 'reset', u)"
+                      @click="openPop('reset', u)"
                     >
                       🔑</button
                     ><button
                       class="ab ad"
                       title="删除"
-                      @click="openPop($event, 'delete', u)"
+                      @click="openPop('delete', u)"
                     >
                       🗑️
                     </button>

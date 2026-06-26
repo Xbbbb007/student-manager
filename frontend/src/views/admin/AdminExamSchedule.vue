@@ -8,7 +8,7 @@ import {
   detectExamConflicts,
   deleteExamSchedule,
 } from "../../api/exam_schedule";
-import { Plus, Warning, Calendar, Refresh, Delete } from "@element-plus/icons-vue";
+import { Plus, Warning, Refresh, Delete } from "@element-plus/icons-vue";
 
 interface ExamScheduleItem {
   id: number;

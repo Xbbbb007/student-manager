@@ -1017,3 +1017,73 @@ def get_teacher_dashboard(
         "fluctuation": fluctuation,
         "needs_attention": needs_attention,
     })
+
+
+@router.get("/export")
+def export_scores_csv(
+    exam_id: int,
+    class_id: int,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_teacher),
+):
+    """教务/教师：导出班级成绩到 CSV"""
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+
+    # 验证班级与考试是否存在
+    class_obj = db.query(Class).filter(Class.id == class_id).first()
+    if not class_obj:
+        raise HTTPException(404, detail="班级不存在")
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise HTTPException(404, detail="考试不存在")
+
+    # 查询该班级学生
+    students = db.query(Student).filter(Student.class_id == class_id).all()
+    if not students:
+        raise HTTPException(400, detail="该班级暂无学生")
+
+    output = io.StringIO()
+    # 写入 UTF-8 BOM，防止 Excel 打开中文乱码
+    output.write('\ufeff')
+    writer = csv.writer(output)
+    
+    # 标题行
+    headers = ["学号", "姓名", "班级", "语文", "数学", "英语", "科学", "道德与法治", "班级排名", "校排名"]
+    writer.writerow(headers)
+    
+    for s in students:
+        row = [s.username, s.name, class_obj.name]
+        # 查询该学生此考试下的成绩
+        scores = db.query(Score).filter(Score.student_id == s.id, Score.exam_id == exam_id).all()
+        score_dict = {sc.subject.value: sc.score for sc in scores}
+        
+        # 排名
+        class_rank = ""
+        school_rank = ""
+        if scores:
+            class_rank = scores[0].class_rank or ""
+            school_rank = scores[0].school_rank or ""
+            
+        row.append(score_dict.get("chinese", ""))
+        row.append(score_dict.get("math", ""))
+        row.append(score_dict.get("english", ""))
+        row.append(score_dict.get("science", ""))
+        row.append(score_dict.get("ethics", ""))
+        row.append(class_rank)
+        row.append(school_rank)
+        
+        writer.writerow(row)
+        
+    output.seek(0)
+    filename = f"{class_obj.name}_{exam.name}_成绩汇总.csv"
+    headers_response = {
+        'Content-Disposition': f'attachment; filename="{filename.encode("utf-8").decode("latin-1")}"'
+    }
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        media_type="text/csv",
+        headers=headers_response
+    )
+

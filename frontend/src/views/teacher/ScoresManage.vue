@@ -2,7 +2,6 @@
 import { ref, computed, onMounted } from "vue";
 import { useUserStore } from "../../stores/user";
 import {
-  getExams,
   getClassScores,
   batchSaveScores,
   createExam,

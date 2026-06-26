@@ -226,7 +226,7 @@ onMounted(() => {
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="editDialogVisible.value = false">取消</el-button>
+          <el-button @click="editDialogVisible = false">取消</el-button>
           <el-button type="primary" :loading="editLoading" @click="handleUpdateStudent">保存修改</el-button>
         </div>
       </template>

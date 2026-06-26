@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { getMyMistakes, addMistake, toggleMistakeMastered, getMistakeStats } from "../../api/mistake";
-import { Plus, Notebook, CircleCheck, Medal, Warning, ArrowDown, ArrowUp } from "@element-plus/icons-vue";
+import { Plus, CircleCheck, Medal, Warning, ArrowDown, ArrowUp } from "@element-plus/icons-vue";
 
 interface MistakeItem {
   id: number;

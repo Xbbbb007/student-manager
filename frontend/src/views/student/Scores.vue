@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from "vue";
 import { getScoreTrend, getClassRanking } from "../../api/scores";
 import Chart from "chart.js/auto";
@@ -23,12 +23,7 @@ const subjectNames: Record<string, string> = {
 const BAR_DEFAULT = "#d49a9a";
 const BAR_HOVER = "#bb7b7b";
 
-interface ScoreItem {
-  subject: string;
-  score: number;
-  class_rank: number | null;
-  school_rank: number | null;
-}
+// ScoreItem interface removed
 
 interface RankItem {
   rank: number;
@@ -205,7 +200,7 @@ function initMainChart() {
             usePointStyle: true,
             pointStyle: "circle",
             padding: 16,
-            font: { size: 11, weight: "600" },
+            font: { size: 11, weight: 600 },
             color: "#6B7280",
           },
         },
@@ -240,7 +235,7 @@ function initMainChart() {
               const v = ctx.parsed.y;
               if (l === "班排名") return `  班排名：第 ${v} 名`;
               if (l === "校排名") return `  校排名：第 ${v} 名`;
-              return null;
+              return "";
             },
           },
         },
@@ -249,7 +244,7 @@ function initMainChart() {
         x: {
           grid: { color: "rgba(148,163,184,0.06)", lineWidth: 1 },
           ticks: {
-            font: { size: 12, weight: "500" },
+            font: { size: 12, weight: 500 },
             color: "#9CA3AF",
             padding: 8,
           },
@@ -333,9 +328,9 @@ function switchSubject(key: string) {
   const classMax = getRankMax(rankData.classRank);
   const schoolMax = getRankMax(rankData.schoolRank);
   mainChart.options.scales!.yLeft!.max = classMax;
-  mainChart.options.scales!.yLeft!.ticks!.stepSize = getRankStepSize(classMax);
+  (mainChart.options.scales!.yLeft!.ticks as any).stepSize = getRankStepSize(classMax);
   mainChart.options.scales!.yRight!.max = schoolMax;
-  mainChart.options.scales!.yRight!.ticks!.stepSize = getRankStepSize(schoolMax);
+  (mainChart.options.scales!.yRight!.ticks as any).stepSize = getRankStepSize(schoolMax);
 
   mainChart.update();
 }
