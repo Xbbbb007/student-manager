@@ -28,6 +28,12 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import com.sms.dao.TeachingPlanDAO;
+import com.sms.dao.ScoreDAO;
+import com.sms.dao.impl.TeachingPlanDAOImpl;
+import com.sms.dao.impl.ScoreDAOImpl;
+import com.sms.entity.TeachingPlan;
+import com.sms.entity.Score;
 
 public class AdminServiceImpl implements AdminService {
 
@@ -37,6 +43,8 @@ public class AdminServiceImpl implements AdminService {
     private final TeacherDAO teacherDAO = new TeacherDAOImpl();
     private final StudentDAO studentDAO = new StudentDAOImpl();
     private final UserDAO userDAO = new UserDAOImpl();
+    private final TeachingPlanDAO teachingPlanDAO = new TeachingPlanDAOImpl();
+    private final ScoreDAO scoreDAO = new ScoreDAOImpl();
 
     // Department
     @Override
@@ -259,6 +267,25 @@ public class AdminServiceImpl implements AdminService {
         student.setUserId(u.getId());
         student.setStatus(1);
         studentDAO.insert(student);
+
+        // Automatically enroll the student in all existing teaching plans for their class
+        List<TeachingPlan> plans = teachingPlanDAO.findAll();
+        for (TeachingPlan plan : plans) {
+            if (plan.getClassId() != null && plan.getClassId().equals(student.getClassId())) {
+                Score exist = scoreDAO.findByStudentAndPlanAndExamType(student.getId(), plan.getId(), "期末");
+                if (exist == null) {
+                    Score sc = new Score();
+                    sc.setTeachingPlanId(plan.getId());
+                    sc.setStudentId(student.getId());
+                    sc.setExamType("期末");
+                    scoreDAO.insert(sc);
+
+                    plan.setCurrentStudents(plan.getCurrentStudents() + 1);
+                    teachingPlanDAO.update(plan);
+                }
+            }
+        }
+
         return student;
     }
 
@@ -329,8 +356,44 @@ public class AdminServiceImpl implements AdminService {
         Student student = studentDAO.findById(studentId);
         if (student == null) throw new EntityNotFoundException("学生不存在");
         if (clazzDAO.findById(targetClassId) == null) throw new EntityNotFoundException("目标班级不存在");
+        
+        Integer oldClassId = student.getClassId();
+        
         student.setClassId(targetClassId);
         studentDAO.update(student);
+
+        // 1. Withdraw from old class's ungraded mandatory courses
+        if (oldClassId != null && !oldClassId.equals(targetClassId)) {
+            List<TeachingPlan> oldPlans = teachingPlanDAO.findAll();
+            for (TeachingPlan plan : oldPlans) {
+                if (plan.getClassId() != null && plan.getClassId().equals(oldClassId)) {
+                    Score sc = scoreDAO.findByStudentAndPlanAndExamType(studentId, plan.getId(), "期末");
+                    if (sc != null && sc.getScore() == null) {
+                        scoreDAO.deleteById(sc.getId());
+                        plan.setCurrentStudents(Math.max(0, plan.getCurrentStudents() - 1));
+                        teachingPlanDAO.update(plan);
+                    }
+                }
+            }
+        }
+
+        // 2. Enroll in new class's mandatory courses
+        List<TeachingPlan> targetPlans = teachingPlanDAO.findAll();
+        for (TeachingPlan plan : targetPlans) {
+            if (plan.getClassId() != null && plan.getClassId().equals(targetClassId)) {
+                Score exist = scoreDAO.findByStudentAndPlanAndExamType(studentId, plan.getId(), "期末");
+                if (exist == null) {
+                    Score sc = new Score();
+                    sc.setTeachingPlanId(plan.getId());
+                    sc.setStudentId(studentId);
+                    sc.setExamType("期末");
+                    scoreDAO.insert(sc);
+
+                    plan.setCurrentStudents(plan.getCurrentStudents() + 1);
+                    teachingPlanDAO.update(plan);
+                }
+            }
+        }
     }
 
     // CSV Imports & Exports

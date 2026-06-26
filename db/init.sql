@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS notice;
 DROP TABLE IF EXISTS schedule;
 DROP TABLE IF EXISTS attendance;
 DROP TABLE IF EXISTS score;
+DROP TABLE IF EXISTS enrollment;
 DROP TABLE IF EXISTS teaching_plan;
 DROP TABLE IF EXISTS course;
 DROP TABLE IF EXISTS student;
@@ -123,19 +124,28 @@ CREATE TABLE teaching_plan (
     UNIQUE KEY unique_teaching (course_id, teacher_id, class_id, semester)
 ) ENGINE=InnoDB;
 
--- 9. score 成绩表
+-- 9. enrollment 选课表
+CREATE TABLE enrollment (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    teaching_plan_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE,
+    FOREIGN KEY (teaching_plan_id) REFERENCES teaching_plan(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_student_plan (student_id, teaching_plan_id)
+) ENGINE=InnoDB;
+
+-- 10. score 成绩表
 CREATE TABLE score (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    teaching_plan_id INT NOT NULL,
-    student_id INT NOT NULL,
+    enrollment_id INT NOT NULL,
     score DOUBLE DEFAULT NULL,
     grade_level VARCHAR(5) DEFAULT NULL COMMENT '等级制: A, B, C, D, F',
     exam_type ENUM('平时', '期中', '期末') NOT NULL DEFAULT '期末',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (teaching_plan_id) REFERENCES teaching_plan(id) ON DELETE CASCADE,
-    FOREIGN KEY (student_id) REFERENCES student(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_student_course_exam (teaching_plan_id, student_id, exam_type)
+    FOREIGN KEY (enrollment_id) REFERENCES enrollment(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_enrollment_exam (enrollment_id, exam_type)
 ) ENGINE=InnoDB;
 
 -- 10. attendance 考勤表

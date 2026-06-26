@@ -159,6 +159,7 @@ public class StudentController {
             items.add(String.format("[%d] %s (教师: %s) | 学分:%.1f | 人数:%d/%d",
                     i + 1, tp.getCourseName(), tp.getTeacherName(), tp.getCourseCredit(), tp.getCurrentStudents(), tp.getMaxStudents()));
         }
+        items.add("[0] 返回上级");
         ConsoleUtil.printMenu("请选择要选修的课程", items);
         int choice = ConsoleUtil.readChoice("选择", electives.size());
         if (choice == 0) return;
@@ -193,6 +194,7 @@ public class StudentController {
         for (int i = 0; i < electives.size(); i++) {
             items.add(String.format("[%d] %s (教师: %s)", i + 1, electives.get(i).getCourseName(), electives.get(i).getTeacherName()));
         }
+        items.add("[0] 返回上级");
         ConsoleUtil.printMenu("请选择要退选的课程", items);
         int choice = ConsoleUtil.readChoice("选择", electives.size());
         if (choice == 0) return;

@@ -45,6 +45,23 @@ public class ConsoleUtil {
         }
     }
 
+    public static String readPassword(String prompt) {
+        while (true) {
+            String password;
+            if (System.console() != null) {
+                char[] passwordChars = System.console().readPassword(prompt + " > ");
+                password = new String(passwordChars).trim();
+            } else {
+                password = readLine(prompt);
+            }
+            if (password.isEmpty()) {
+                printError("密码不能为空，请重新输入");
+                continue;
+            }
+            return password;
+        }
+    }
+
     public static int readChoice(String prompt, int max) {
         return readInt(prompt, 0, max);
     }

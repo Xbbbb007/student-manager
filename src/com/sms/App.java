@@ -64,7 +64,7 @@ public class App {
         System.out.println("==================================================");
         
         String username = ConsoleUtil.readLine("请输入用户名", false);
-        String password = ConsoleUtil.readLine("请输入密码", false); // Simple text input, or password masked if needed
+        String password = ConsoleUtil.readPassword("请输入密码");
 
         try {
             System.out.println("验证中，请稍候...");

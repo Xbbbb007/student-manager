@@ -37,12 +37,14 @@ public class ScoreDAOImpl implements ScoreDAO {
         }
     };
 
-    private static final String BASE_SELECT = "SELECT s.*, st.student_no, st.name as student_name, cl.class_name, " +
+    private static final String BASE_SELECT = "SELECT s.id, e.student_id, e.teaching_plan_id, s.score, s.grade_level, s.exam_type, " +
+            "s.created_at, s.updated_at, st.student_no, st.name as student_name, cl.class_name, " +
             "c.course_no, c.course_name, c.credit, tp.semester " +
             "FROM score s " +
-            "JOIN student st ON s.student_id = st.id " +
+            "JOIN enrollment e ON s.enrollment_id = e.id " +
+            "JOIN student st ON e.student_id = st.id " +
             "JOIN class cl ON st.class_id = cl.id " +
-            "JOIN teaching_plan tp ON s.teaching_plan_id = tp.id " +
+            "JOIN teaching_plan tp ON e.teaching_plan_id = tp.id " +
             "JOIN course c ON tp.course_id = c.id ";
 
     @Override
@@ -54,11 +56,32 @@ public class ScoreDAOImpl implements ScoreDAO {
         }
     }
 
+    private Integer getOrCreateEnrollment(Integer studentId, Integer teachingPlanId) throws SQLException {
+        Integer enrollmentId = DBUtil.executeQueryOne(
+                "SELECT id FROM enrollment WHERE student_id = ? AND teaching_plan_id = ?",
+                new DBUtil.RowMapper<Integer>() {
+                    @Override
+                    public Integer mapRow(ResultSet rs) throws SQLException {
+                        return rs.getInt("id");
+                    }
+                },
+                studentId, teachingPlanId
+        );
+        if (enrollmentId == null) {
+            enrollmentId = DBUtil.executeInsert(
+                    "INSERT INTO enrollment (student_id, teaching_plan_id) VALUES (?, ?)",
+                    studentId, teachingPlanId
+            );
+        }
+        return enrollmentId;
+    }
+
     @Override
     public int insert(Score score) {
         try {
-            int id = DBUtil.executeInsert("INSERT INTO score (teaching_plan_id, student_id, score, grade_level, exam_type) VALUES (?, ?, ?, ?, ?)",
-                    score.getTeachingPlanId(), score.getStudentId(), score.getScore(), score.getGradeLevel(), score.getExamType());
+            Integer enrollmentId = getOrCreateEnrollment(score.getStudentId(), score.getTeachingPlanId());
+            int id = DBUtil.executeInsert("INSERT INTO score (enrollment_id, score, grade_level, exam_type) VALUES (?, ?, ?, ?)",
+                    enrollmentId, score.getScore(), score.getGradeLevel(), score.getExamType());
             if (id > 0) {
                 score.setId(id);
                 return 1;
@@ -82,7 +105,33 @@ public class ScoreDAOImpl implements ScoreDAO {
     @Override
     public int deleteById(Integer id) {
         try {
-            return DBUtil.executeUpdate("DELETE FROM score WHERE id = ?", id);
+            Integer enrollmentId = DBUtil.executeQueryOne(
+                    "SELECT enrollment_id FROM score WHERE id = ?",
+                    new DBUtil.RowMapper<Integer>() {
+                        @Override
+                        public Integer mapRow(ResultSet rs) throws SQLException {
+                            return rs.getInt("enrollment_id");
+                        }
+                    },
+                    id
+            );
+            int deleted = DBUtil.executeUpdate("DELETE FROM score WHERE id = ?", id);
+            if (enrollmentId != null) {
+                Integer count = DBUtil.executeQueryOne(
+                        "SELECT COUNT(*) as cnt FROM score WHERE enrollment_id = ?",
+                        new DBUtil.RowMapper<Integer>() {
+                            @Override
+                            public Integer mapRow(ResultSet rs) throws SQLException {
+                                return rs.getInt("cnt");
+                            }
+                        },
+                        enrollmentId
+                );
+                if (count != null && count == 0) {
+                    DBUtil.executeUpdate("DELETE FROM enrollment WHERE id = ?", enrollmentId);
+                }
+            }
+            return deleted;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -91,7 +140,7 @@ public class ScoreDAOImpl implements ScoreDAO {
     @Override
     public List<Score> findByStudentId(Integer studentId, String semester) {
         try {
-            String sql = BASE_SELECT + "WHERE s.student_id = ? ";
+            String sql = BASE_SELECT + "WHERE e.student_id = ? ";
             if (semester != null && !semester.isEmpty()) {
                 sql += "AND tp.semester = ? ";
                 return DBUtil.executeQuery(sql + "ORDER BY c.course_no, s.exam_type", mapper, studentId, semester);
@@ -105,7 +154,7 @@ public class ScoreDAOImpl implements ScoreDAO {
     @Override
     public List<Score> findByTeachingPlanId(Integer planId) {
         try {
-            return DBUtil.executeQuery(BASE_SELECT + "WHERE s.teaching_plan_id = ? ORDER BY st.student_no, s.exam_type", mapper, planId);
+            return DBUtil.executeQuery(BASE_SELECT + "WHERE e.teaching_plan_id = ? ORDER BY st.student_no, s.exam_type", mapper, planId);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -114,7 +163,7 @@ public class ScoreDAOImpl implements ScoreDAO {
     @Override
     public Score findByStudentAndPlanAndExamType(Integer studentId, Integer planId, String examType) {
         try {
-            return DBUtil.executeQueryOne(BASE_SELECT + "WHERE s.student_id = ? AND s.teaching_plan_id = ? AND s.exam_type = ?", mapper, studentId, planId, examType);
+            return DBUtil.executeQueryOne(BASE_SELECT + "WHERE e.student_id = ? AND e.teaching_plan_id = ? AND s.exam_type = ?", mapper, studentId, planId, examType);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
