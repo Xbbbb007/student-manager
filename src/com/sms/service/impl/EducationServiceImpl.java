@@ -13,7 +13,9 @@ import com.sms.dao.impl.ScoreDAOImpl;
 import com.sms.dao.impl.StudentDAOImpl;
 import com.sms.dao.impl.TeacherDAOImpl;
 import com.sms.dao.impl.UserDAOImpl;
+import com.sms.dao.ScoreDAO;
 import com.sms.entity.Attendance;
+import com.sms.entity.Clazz;
 import com.sms.entity.LeaveRequest;
 import com.sms.entity.Teacher;
 import com.sms.entity.Notice;
@@ -320,15 +322,30 @@ public class EducationServiceImpl implements EducationService {
         req.setRemark(remark);
         leaveRequestDAO.update(req);
 
-        // If approved, automatically insert an attendance record with status '请假' (Leave) for the course dates!
+        // Bug #8 修复：批准请假后自动为请假日期范围内已选课程插入"请假"状态考勤记录
         if ("已批准".equals(status)) {
-            // Find all teaching plans where this student is registered
-            Student s = studentDAO.findById(req.getStudentId());
-            if (s != null) {
-                // For simplicity, let's insert '请假' logs for any course session matching the date range.
-                // We'll insert it dynamically or let the attendance taker notice the 'approved leave'.
-                // Standard business logic: when generating attendance records, check leave requests first.
-                // Here, we can write a helper to check if student is on leave for a given date!
+            // 获取学生所有课程（不限学期，null表示全部）
+            List<Score> allScores = scoreDAO.findByStudentId(req.getStudentId(), null);
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(req.getStartDate());
+            while (!cal.getTime().after(req.getEndDate())) {
+                Date leaveDate = new Date(cal.getTime().getTime());
+                for (Score sc : allScores) {
+                    if (sc.getTeachingPlanId() == null) continue;
+                    // 检查当天是否已有考勤记录，避免重复插入
+                    Attendance existing = attendanceDAO.findByStudentAndPlanAndDate(
+                            req.getStudentId(), sc.getTeachingPlanId(), leaveDate);
+                    if (existing == null) {
+                        Attendance a = new Attendance();
+                        a.setStudentId(req.getStudentId());
+                        a.setTeachingPlanId(sc.getTeachingPlanId());
+                        a.setAttendDate(leaveDate);
+                        a.setStatus("请假");
+                        a.setRemark("系统自动标记 - 请假已批准");
+                        attendanceDAO.insert(a);
+                    }
+                }
+                cal.add(java.util.Calendar.DATE, 1);
             }
         }
     }
@@ -388,5 +405,140 @@ public class EducationServiceImpl implements EducationService {
     @Override
     public List<Notice> listAllNotices() {
         return noticeDAO.findAll();
+    }
+
+    // === 新增：数据统计与报表 (模块10) ===
+
+    @Override
+    public List<Map<String, Object>> compareClassScores(Integer courseId, String semester) {
+        // 获取该课程在各班级的教学计划
+        List<com.sms.entity.TeachingPlan> allPlans = new com.sms.dao.impl.TeachingPlanDAOImpl().findAll();
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        for (com.sms.entity.TeachingPlan tp : allPlans) {
+            if (!tp.getCourseId().equals(courseId)) continue;
+            if (tp.getClassId() == null) continue; // 跳过选修课（无班级绑定）
+            if (semester != null && !semester.isEmpty() && !tp.getSemester().equals(semester)) continue;
+
+            List<Score> scores = scoreDAO.findByTeachingPlanId(tp.getId());
+            Map<String, Object> row = new HashMap<>();
+            row.put("className", tp.getClassName());
+            row.put("semester", tp.getSemester());
+            row.put("courseName", tp.getCourseName());
+
+            int graded = 0, passCount = 0, excelCount = 0;
+            double sum = 0, max = -1, min = 101;
+            for (Score s : scores) {
+                if (s.getScore() != null) {
+                    graded++;
+                    sum += s.getScore();
+                    if (s.getScore() > max) max = s.getScore();
+                    if (s.getScore() < min) min = s.getScore();
+                    if (s.getScore() >= 60) passCount++;
+                    if (s.getScore() >= 90) excelCount++;
+                }
+            }
+            row.put("total", scores.size());
+            row.put("graded", graded);
+            row.put("avg", graded > 0 ? sum / graded : 0.0);
+            row.put("max", graded > 0 ? max : 0.0);
+            row.put("min", graded > 0 ? min : 0.0);
+            row.put("passRate", graded > 0 ? (double) passCount / graded * 100.0 : 0.0);
+            row.put("excelRate", graded > 0 ? (double) excelCount / graded * 100.0 : 0.0);
+            results.add(row);
+        }
+        return results;
+    }
+
+    @Override
+    public List<Map<String, Object>> getScoreTrend(Integer classId, Integer courseId) {
+        // 获取该班级该课程在所有学期的成绩统计趋势
+        List<com.sms.entity.TeachingPlan> allPlans = new com.sms.dao.impl.TeachingPlanDAOImpl().findAll();
+        List<Map<String, Object>> trends = new ArrayList<>();
+
+        for (com.sms.entity.TeachingPlan tp : allPlans) {
+            if (!tp.getCourseId().equals(courseId)) continue;
+            if (tp.getClassId() == null || !tp.getClassId().equals(classId)) continue;
+
+            List<Score> scores = scoreDAO.findByTeachingPlanId(tp.getId());
+            Map<String, Object> row = new HashMap<>();
+            row.put("semester", tp.getSemester());
+
+            int graded = 0, passCount = 0;
+            double sum = 0;
+            for (Score s : scores) {
+                if (s.getScore() != null) {
+                    graded++;
+                    sum += s.getScore();
+                    if (s.getScore() >= 60) passCount++;
+                }
+            }
+            row.put("graded", graded);
+            row.put("avg", graded > 0 ? sum / graded : 0.0);
+            row.put("passRate", graded > 0 ? (double) passCount / graded * 100.0 : 0.0);
+            trends.add(row);
+        }
+        // 按学期排序
+        trends.sort((a, b) -> ((String) a.get("semester")).compareTo((String) b.get("semester")));
+        return trends;
+    }
+
+    @Override
+    public List<Map<String, Object>> getClassAttendanceReport(String semester) {
+        // 按班级统计考勤率
+        List<Clazz> classes = new com.sms.dao.impl.ClazzDAOImpl().findAll();
+        List<com.sms.entity.TeachingPlan> allPlans = new com.sms.dao.impl.TeachingPlanDAOImpl().findAll();
+        List<Map<String, Object>> report = new ArrayList<>();
+
+        for (Clazz c : classes) {
+            int totalAttendance = 0, presentCount = 0, absentCount = 0;
+
+            for (com.sms.entity.TeachingPlan tp : allPlans) {
+                if (tp.getClassId() == null || !tp.getClassId().equals(c.getId())) continue;
+                if (semester != null && !semester.isEmpty() && !tp.getSemester().equals(semester)) continue;
+
+                // 获取该教学计划下所有学生的考勤
+                List<Attendance> attList = attendanceDAO.findByStudentId(null); // 需要按 plan 查
+                // 使用 findByPlanAndDate 的方式，遍历所有日期
+                // 简化实现：直接查该 plan 的所有考勤
+                attList = attendanceDAO.findByPlanAndDate(tp.getId(), null);
+                if (attList.isEmpty()) {
+                    // 尝试另一种方式
+                    // 由于 DAO 限制，我们通过 student 遍历
+                    List<Student> students = new com.sms.dao.impl.StudentDAOImpl().findByClassId(c.getId());
+                    for (Student s : students) {
+                        List<Attendance> sAtt = attendanceDAO.findByStudentAndCourse(s.getId(), tp.getId());
+                        for (Attendance a : sAtt) {
+                            totalAttendance++;
+                            if ("出勤".equals(a.getStatus())) presentCount++;
+                            else absentCount++;
+                        }
+                    }
+                } else {
+                    for (Attendance a : attList) {
+                        totalAttendance++;
+                        if ("出勤".equals(a.getStatus())) presentCount++;
+                        else absentCount++;
+                    }
+                }
+            }
+
+            Map<String, Object> row = new HashMap<>();
+            row.put("classId", c.getId());
+            row.put("className", c.getClassName());
+            row.put("total", totalAttendance);
+            row.put("present", presentCount);
+            row.put("absent", absentCount);
+            row.put("rate", totalAttendance > 0 ? (double) presentCount / totalAttendance * 100.0 : 100.0);
+            // 缺勤预警：出勤率低于 85%
+            row.put("warning", totalAttendance > 0 && (double) presentCount / totalAttendance * 100.0 < 85.0);
+            report.add(row);
+        }
+        return report;
+    }
+
+    @Override
+    public void exportStatisticsToCSV(List<String> headers, List<List<String>> rows, String filePath) throws Exception {
+        CSVUtil.writeCSV(filePath, headers, rows);
     }
 }

@@ -43,4 +43,14 @@ public interface EducationService {
     void recallNotice(Integer noticeId);
     List<Notice> listNoticesForUser(Integer userId);
     List<Notice> listAllNotices();
+
+    // === 新增：数据统计与报表 (模块10) ===
+    // 班级对比：多班级同科目平均分/及格率对比
+    List<Map<String, Object>> compareClassScores(Integer courseId, String semester);
+    // 趋势分析：同一班级多次考试的成绩变化趋势
+    List<Map<String, Object>> getScoreTrend(Integer classId, Integer courseId);
+    // 考勤月度报表：按班级统计出勤率，缺勤预警
+    List<Map<String, Object>> getClassAttendanceReport(String semester);
+    // 导出统计结果到 CSV
+    void exportStatisticsToCSV(List<String> headers, List<List<String>> rows, String filePath) throws Exception;
 }

@@ -26,6 +26,7 @@ public class SimpleConnectionPool implements DataSource {
     private final long maxWait;
 
     private final LinkedList<Connection> pool = new LinkedList<>();
+    private final LinkedList<Connection> physicalConnections = new LinkedList<>(); // Bug #6: track physical connections for proper shutdown
     private int activeCount = 0;
 
     private SimpleConnectionPool() {
@@ -52,7 +53,9 @@ public class SimpleConnectionPool implements DataSource {
             // Pre-fill pool
             synchronized (pool) {
                 for (int i = 0; i < initialSize; i++) {
-                    pool.add(createPhysicalConnection());
+                    Connection c = createPhysicalConnection();
+                    pool.add(c);
+                    physicalConnections.add(c);
                 }
             }
         } catch (Exception e) {
@@ -78,6 +81,7 @@ public class SimpleConnectionPool implements DataSource {
             while (pool.isEmpty()) {
                 if (activeCount < maxActive) {
                     Connection conn = createPhysicalConnection();
+                    physicalConnections.add(conn); // track it
                     activeCount++;
                     return wrapConnection(conn);
                 } else {
@@ -95,6 +99,17 @@ public class SimpleConnectionPool implements DataSource {
                 }
             }
             Connection conn = pool.removeFirst();
+            // Bug #7 修复：检查连接有效性，防止 MySQL wait_timeout 超时后报 "Communications link failure"
+            try {
+                if (!conn.isValid(2)) {
+                    // 连接已断开，丢弃并新建
+                    try { conn.close(); } catch (Exception ignored) {}
+                    conn = createPhysicalConnection();
+                }
+            } catch (SQLException e) {
+                try { conn.close(); } catch (Exception ignored) {}
+                conn = createPhysicalConnection();
+            }
             activeCount++;
             return wrapConnection(conn);
         }
@@ -154,14 +169,19 @@ public class SimpleConnectionPool implements DataSource {
 
     public synchronized void shutdown() {
         synchronized (pool) {
-            for (Connection conn : pool) {
+            // Bug #6 修复：直接关闭物理连接，而非代理（代理的 close() 会被拦截到 returnConnection）
+            for (Connection physical : physicalConnections) {
                 try {
-                    ((Connection) ((Proxy) conn).getClass().getInterfaces()[0].cast(conn)).close(); // Just close physically
+                    if (!physical.isClosed()) {
+                        physical.close();
+                    }
                 } catch (Exception e) {
-                    // Ignore proxy closing issues, close actual connection if possible
+                    // Ignore individual close errors
                 }
             }
+            physicalConnections.clear();
             pool.clear();
+            activeCount = 0;
         }
     }
 

@@ -82,20 +82,46 @@ public class StudentController {
         while (true) {
             ConsoleUtil.clearScreen();
             List<String> items = Arrays.asList(
-                    "[1] 查看可选的选修与公选课",
-                    "[2] 选修新课程",
-                    "[3] 退选已选课程",
+                    "[1] 查看我已选的课程",
+                    "[2] 查看可选的选修与公选课",
+                    "[3] 选修新课程",
+                    "[4] 退选已选课程",
                     "[0] 返回上级"
             );
             ConsoleUtil.printMenu("自主选课系统", items);
-            int choice = ConsoleUtil.readChoice("请选择操作", 3);
+            int choice = ConsoleUtil.readChoice("请选择操作", 4);
             if (choice == 0) break;
             switch (choice) {
-                case 1: viewAvailableElectives(semester); break;
-                case 2: enrollElectiveCourse(s, semester); break;
-                case 3: dropElectiveCourse(s, semester); break;
+                case 1: viewMySelectedCourses(s, semester); break;
+                case 2: viewAvailableElectives(semester); break;
+                case 3: enrollElectiveCourse(s, semester); break;
+                case 4: dropElectiveCourse(s, semester); break;
             }
         }
+    }
+
+    private void viewMySelectedCourses(Student s, String semester) {
+        List<TeachingPlan> selected = academicService.listStudentSelectedPlans(s.getId(), semester);
+        System.out.println("---- " + s.getName() + " 的已选课程列表 (" + semester + ") ----");
+        if (selected.isEmpty()) {
+            ConsoleUtil.printError("您本学期暂未选任何课程。");
+            ConsoleUtil.pause();
+            return;
+        }
+        List<String> headers = Arrays.asList("课程名称", "课程类型", "学分", "主讲教师", "备注");
+        List<List<String>> rows = new ArrayList<>();
+        for (TeachingPlan tp : selected) {
+            rows.add(Arrays.asList(
+                    tp.getCourseName(),
+                    tp.getCourseType(),
+                    tp.getCourseCredit().toString(),
+                    tp.getTeacherName(),
+                    tp.getClassId() == null ? "自主选修" : "班级必修/选修"
+            ));
+        }
+        ConsoleUtil.printTable(headers, rows);
+        System.out.printf("\n共已选 %d 门课程。\n", selected.size());
+        ConsoleUtil.pause();
     }
 
     private void viewAvailableElectives(String semester) {

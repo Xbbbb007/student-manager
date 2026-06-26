@@ -14,6 +14,7 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class AdminController {
 
@@ -34,10 +35,11 @@ public class AdminController {
                     "[6] 课表排课管理",
                     "[7] 公告通知管理",
                     "[8] 账户与安全管理",
+                    "[9] 数据统计与报表",
                     "[0] 返回登录主页"
             );
             ConsoleUtil.printMenu("系统管理主页面 — 当前管理员: " + loggedInUser.getRealName(), items);
-            int choice = ConsoleUtil.readChoice("请选择操作", 8);
+            int choice = ConsoleUtil.readChoice("请选择操作", 9);
             if (choice == 0) {
                 break;
             }
@@ -50,6 +52,7 @@ public class AdminController {
                 case 6: manageSchedules(); break;
                 case 7: manageNotices(loggedInUser.getId()); break;
                 case 8: manageAccounts(); break;
+                case 9: manageStatistics(); break;
             }
         }
     }
@@ -483,8 +486,13 @@ public class AdminController {
     private void addNewClass() {
         System.out.println("---- 添加新班级 ----");
         String classNo = ConsoleUtil.readLine("班级编号", false);
-        if (adminService.getClazzById(classNo != null ? 0 : 0) != null) { // mock check or check by no
-            // Let's implement check by classNo
+        // 按班级编号检查是否已存在
+        boolean exists = adminService.listAllClazzes().stream()
+                .anyMatch(c -> c.getClassNo().equalsIgnoreCase(classNo));
+        if (exists) {
+            ConsoleUtil.printError("班级编号 " + classNo + " 已存在，请使用其他编号！");
+            ConsoleUtil.pause();
+            return;
         }
         String className = ConsoleUtil.readLine("班级名称", false);
         Integer majorId = selectMajor();
@@ -668,12 +676,34 @@ public class AdminController {
         String name = ConsoleUtil.readLine("课程名 (回车默认: " + c.getCourseName() + ")");
         if (!name.isEmpty()) c.setCourseName(name);
 
-        double credit = ConsoleUtil.readDouble("学分 (回车跳过, 范围: 0.5 - 10.0)", 0.5, 10.0); // Wait, readDouble with default would require custom method, but we can read string first
+        // 修复：只用一次 readLine，并加 try-catch 防止非数字输入崩溃
         String creditStr = ConsoleUtil.readLine("学分 (回车默认: " + c.getCredit() + ")");
-        if (!creditStr.isEmpty()) c.setCredit(Double.parseDouble(creditStr));
+        if (!creditStr.isEmpty()) {
+            try {
+                double credit = Double.parseDouble(creditStr);
+                if (credit < 0.5 || credit > 10.0) {
+                    ConsoleUtil.printError("学分必须在 0.5 - 10.0 之间，已保留原值。");
+                } else {
+                    c.setCredit(credit);
+                }
+            } catch (NumberFormatException e) {
+                ConsoleUtil.printError("学分格式不正确，已保留原值。");
+            }
+        }
 
         String hoursStr = ConsoleUtil.readLine("学时 (回车默认: " + c.getHours() + ")");
-        if (!hoursStr.isEmpty()) c.setHours(Integer.parseInt(hoursStr));
+        if (!hoursStr.isEmpty()) {
+            try {
+                int hours = Integer.parseInt(hoursStr);
+                if (hours < 1 || hours > 512) {
+                    ConsoleUtil.printError("学时必须在 1 - 512 之间，已保留原值。");
+                } else {
+                    c.setHours(hours);
+                }
+            } catch (NumberFormatException e) {
+                ConsoleUtil.printError("学时格式不正确，已保留原值。");
+            }
+        }
 
         System.out.println("修改课程类型？当前: " + c.getType());
         if (ConsoleUtil.confirm("修改类型？")) {
@@ -1177,6 +1207,240 @@ public class AdminController {
         ConsoleUtil.pause();
     }
 
+
+    // --- 9. DATA STATISTICS & REPORTS ---
+    private void manageStatistics() {
+        while (true) {
+            ConsoleUtil.clearScreen();
+            List<String> items = Arrays.asList(
+                    "[1] 成绩分布统计 (文本柱状图)",
+                    "[2] 班级成绩对比分析",
+                    "[3] 成绩趋势分析",
+                    "[4] 考勤月度报表",
+                    "[5] 统计结果导出 CSV",
+                    "[0] 返回上级"
+            );
+            ConsoleUtil.printMenu("数据统计与报表中心", items);
+            int choice = ConsoleUtil.readChoice("请选择操作", 5);
+            if (choice == 0) break;
+            switch (choice) {
+                case 1: viewScoreDistribution(); break;
+                case 2: viewClassComparison(); break;
+                case 3: viewScoreTrend(); break;
+                case 4: viewAttendanceReport(); break;
+                case 5: exportStatisticsCSV(); break;
+            }
+        }
+    }
+
+    private void viewScoreDistribution() {
+        System.out.println("---- 成绩分布统计 ----");
+        System.out.println("请选择教学计划:");
+        List<com.sms.entity.TeachingPlan> plans = academicService.listAllTeachingPlans();
+        if (plans.isEmpty()) {
+            ConsoleUtil.printError("暂无教学计划数据");
+            ConsoleUtil.pause();
+            return;
+        }
+        List<String> items = new ArrayList<>();
+        for (int i = 0; i < plans.size(); i++) {
+            com.sms.entity.TeachingPlan tp = plans.get(i);
+            items.add(String.format("[%d] %s | %s | %s", i + 1, tp.getSemester(), tp.getCourseName(), tp.getTeacherName()));
+        }
+        ConsoleUtil.printMenu("选择教学计划", items);
+        int choice = ConsoleUtil.readChoice("选择", plans.size());
+        if (choice == 0) return;
+
+        Integer planId = plans.get(choice - 1).getId();
+        Map<String, Object> stats = educationService.calculatePlanScoreStats(planId);
+        int graded = (int) stats.get("graded");
+        if (graded == 0) {
+            ConsoleUtil.printError("该课程暂无已录入的成绩");
+            ConsoleUtil.pause();
+            return;
+        }
+
+        List<String> labels = Arrays.asList("90-100 (A)", "80-89  (B)", "70-79  (C)", "60-69  (D)", "0-59   (F)");
+        List<Integer> values = Arrays.asList(
+                (int) stats.get("catA"), (int) stats.get("catB"),
+                (int) stats.get("catC"), (int) stats.get("catD"), (int) stats.get("catF"));
+        List<Double> pcts = Arrays.asList(
+                (double) stats.get("pctA"), (double) stats.get("pctB"),
+                (double) stats.get("pctC"), (double) stats.get("pctD"), (double) stats.get("pctF"));
+
+        ConsoleUtil.printBarChart("成绩分布直方图 (共录入 " + graded + "/" + stats.get("total") + " 人)", labels, values, pcts);
+        System.out.printf("平均分: %.1f  最高分: %.1f  最低分: %.1f  及格率: %.1f%%  优秀率: %.1f%%\n",
+                (double) stats.get("avg"), (double) stats.get("max"), (double) stats.get("min"),
+                (double) stats.get("passRate"), (double) stats.get("excelRate"));
+        ConsoleUtil.pause();
+    }
+
+    private void viewClassComparison() {
+        System.out.println("---- 班级成绩对比分析 ----");
+        Integer courseId = selectCourse();
+        if (courseId == null) return;
+        String semester = ConsoleUtil.readLine("请输入学期 (如: 2025-2026-1, 回车查看全部)");
+
+        List<Map<String, Object>> results = educationService.compareClassScores(courseId, semester);
+        if (results.isEmpty()) {
+            ConsoleUtil.printError("暂无该课程的成绩对比数据");
+            ConsoleUtil.pause();
+            return;
+        }
+
+        System.out.println("---- 班级对比: " + results.get(0).get("courseName") + " (" + (semester.isEmpty() ? "全部学期" : semester) + ") ----");
+        List<String> headers = Arrays.asList("班级", "学期", "已录人数", "平均分", "最高分", "最低分", "及格率", "优秀率");
+        List<List<String>> rows = new ArrayList<>();
+        for (Map<String, Object> r : results) {
+            rows.add(Arrays.asList(
+                    (String) r.get("className"),
+                    (String) r.get("semester"),
+                    String.valueOf(r.get("graded")),
+                    String.format("%.1f", (double) r.get("avg")),
+                    String.format("%.1f", (double) r.get("max")),
+                    String.format("%.1f", (double) r.get("min")),
+                    String.format("%.1f%%", (double) r.get("passRate")),
+                    String.format("%.1f%%", (double) r.get("excelRate"))
+            ));
+        }
+        ConsoleUtil.printTable(headers, rows);
+        ConsoleUtil.pause();
+    }
+
+    private void viewScoreTrend() {
+        System.out.println("---- 成绩趋势分析 ----");
+        Integer classId = selectClass();
+        if (classId == null) return;
+        Integer courseId = selectCourse();
+        if (courseId == null) return;
+
+        List<Map<String, Object>> trends = educationService.getScoreTrend(classId, courseId);
+        if (trends.isEmpty()) {
+            ConsoleUtil.printError("暂无该班级该课程的历史成绩数据");
+            ConsoleUtil.pause();
+            return;
+        }
+
+        System.out.println("---- 成绩趋势 ----");
+        List<String> headers = Arrays.asList("学期", "已录人数", "平均分", "及格率");
+        List<List<String>> rows = new ArrayList<>();
+        for (Map<String, Object> t : trends) {
+            rows.add(Arrays.asList(
+                    (String) t.get("semester"),
+                    String.valueOf(t.get("graded")),
+                    String.format("%.1f", (double) t.get("avg")),
+                    String.format("%.1f%%", (double) t.get("passRate"))
+            ));
+        }
+        ConsoleUtil.printTable(headers, rows);
+
+        // 绘制平均分趋势柱状图
+        List<String> labels = new ArrayList<>();
+        List<Integer> values = new ArrayList<>();
+        List<Double> pcts = new ArrayList<>();
+        for (Map<String, Object> t : trends) {
+            labels.add((String) t.get("semester"));
+            int avgInt = (int) Math.round((double) t.get("avg"));
+            values.add(avgInt);
+            pcts.add((double) t.get("avg"));
+        }
+        ConsoleUtil.printBarChart("平均分变化趋势", labels, values, pcts);
+        ConsoleUtil.pause();
+    }
+
+    private void viewAttendanceReport() {
+        System.out.println("---- 考勤月度报表 ----");
+        String semester = ConsoleUtil.readLine("请输入学期 (如: 2025-2026-1)");
+
+        List<Map<String, Object>> report = educationService.getClassAttendanceReport(semester);
+        if (report.isEmpty()) {
+            ConsoleUtil.printError("暂无考勤数据");
+            ConsoleUtil.pause();
+            return;
+        }
+
+        System.out.println("---- 考勤汇总报表 (" + semester + ") ----");
+        List<String> headers = Arrays.asList("班级", "总考勤次数", "出勤次数", "缺勤次数", "出勤率", "预警");
+        List<List<String>> rows = new ArrayList<>();
+        for (Map<String, Object> r : report) {
+            rows.add(Arrays.asList(
+                    (String) r.get("className"),
+                    String.valueOf(r.get("total")),
+                    String.valueOf(r.get("present")),
+                    String.valueOf(r.get("absent")),
+                    String.format("%.1f%%", (double) r.get("rate")),
+                    (boolean) r.get("warning") ? "⚠ 缺勤预警" : "正常"
+            ));
+        }
+        ConsoleUtil.printTable(headers, rows);
+        ConsoleUtil.pause();
+    }
+
+    private void exportStatisticsCSV() {
+        System.out.println("---- 导出统计结果 ----");
+        System.out.println("  [1] 导出成绩分布统计");
+        System.out.println("  [2] 导出班级对比数据");
+        System.out.println("  [3] 导出考勤报表");
+        System.out.println("  [0] 返回");
+        int choice = ConsoleUtil.readChoice("选择导出类型", 3);
+        if (choice == 0) return;
+
+        String path = ConsoleUtil.readLine("请输入导出文件路径 (如: data/stats.csv)");
+        try {
+            List<String> headers;
+            List<List<String>> rows = new ArrayList<>();
+
+            if (choice == 1) {
+                Integer courseId = selectCourse();
+                if (courseId == null) return;
+                String semester = ConsoleUtil.readLine("学期 (回车全部)");
+                List<Map<String, Object>> results = educationService.compareClassScores(courseId, semester);
+                headers = Arrays.asList("班级", "学期", "平均分", "最高分", "最低分", "及格率", "优秀率");
+                for (Map<String, Object> r : results) {
+                    rows.add(Arrays.asList(
+                            (String) r.get("className"), (String) r.get("semester"),
+                            String.format("%.1f", (double) r.get("avg")),
+                            String.format("%.1f", (double) r.get("max")),
+                            String.format("%.1f", (double) r.get("min")),
+                            String.format("%.1f%%", (double) r.get("passRate")),
+                            String.format("%.1f%%", (double) r.get("excelRate"))
+                    ));
+                }
+            } else if (choice == 2) {
+                headers = Arrays.asList("班级", "学期", "平均分", "及格率");
+                Integer classId = selectClass();
+                if (classId == null) return;
+                Integer courseId = selectCourse();
+                if (courseId == null) return;
+                List<Map<String, Object>> trends = educationService.getScoreTrend(classId, courseId);
+                for (Map<String, Object> t : trends) {
+                    rows.add(Arrays.asList(
+                            (String) t.get("semester"), String.valueOf(t.get("graded")),
+                            String.format("%.1f", (double) t.get("avg")),
+                            String.format("%.1f%%", (double) t.get("passRate"))
+                    ));
+                }
+            } else {
+                String semester = ConsoleUtil.readLine("学期");
+                List<Map<String, Object>> report = educationService.getClassAttendanceReport(semester);
+                headers = Arrays.asList("班级", "总考勤", "出勤", "缺勤", "出勤率", "预警");
+                for (Map<String, Object> r : report) {
+                    rows.add(Arrays.asList(
+                            (String) r.get("className"), String.valueOf(r.get("total")),
+                            String.valueOf(r.get("present")), String.valueOf(r.get("absent")),
+                            String.format("%.1f%%", (double) r.get("rate")),
+                            (boolean) r.get("warning") ? "是" : "否"
+                    ));
+                }
+            }
+
+            educationService.exportStatisticsToCSV(headers, rows, path);
+            ConsoleUtil.printSuccess("统计结果已导出至: " + path);
+        } catch (Exception e) {
+            ConsoleUtil.printError("导出失败: " + e.getMessage());
+        }
+        ConsoleUtil.pause();
+    }
 
     // --- SELECT HELPER METHODS ---
     private Integer selectDepartment() {

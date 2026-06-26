@@ -146,19 +146,26 @@ public class AcademicServiceImpl implements AcademicService {
             throw new BusinessException("选课人数已满 (" + plan.getCurrentStudents() + "/" + plan.getMaxStudents() + ")");
         }
 
-        // 3. Time Conflict Check
-        // Get all schedules of courses this student has registered in (both mandatory from class and selected electives)
-        List<Schedule> studentSchedules = scheduleDAO.findByClassId(student.getClassId(), plan.getSemester());
+        // 3. 时间冲突检测
+        // Bug #5 修复：同时检查已选班级必修课和已选其他选修课的时间冲突
+        List<Schedule> classSchedules = scheduleDAO.findByClassId(student.getClassId(), plan.getSemester());
+        // 获取学生已选选修课的所有排课（class_id 为 null 的教学计划）
+        List<TeachingPlan> selectedElectives = listStudentSelectedPlans(studentId, plan.getSemester());
+        List<Schedule> allStudentSchedules = new java.util.ArrayList<>(classSchedules);
+        for (TeachingPlan elective : selectedElectives) {
+            if (elective.getClassId() == null && !elective.getId().equals(teachingPlanId)) {
+                allStudentSchedules.addAll(scheduleDAO.findByPlanId(elective.getId()));
+            }
+        }
         List<Schedule> planSchedules = scheduleDAO.findByPlanId(teachingPlanId);
 
         for (Schedule ps : planSchedules) {
-            for (Schedule ss : studentSchedules) {
+            for (Schedule ss : allStudentSchedules) {
                 if (ps.getDayOfWeek().equals(ss.getDayOfWeek())) {
-                    // Check overlap: start1 <= end2 && end1 >= start2
                     if (ps.getSectionStart() <= ss.getSectionEnd() && ps.getSectionEnd() >= ss.getSectionStart()) {
                         throw new ScheduleConflictException(String.format(
-                                "选课时间冲突！该课程上课时间 [%s 周%d 第%d-%d节] 与已有课表 [%s] 重合。",
-                                ps.getClassroom(), ps.getDayOfWeek(), ps.getSectionStart(), ps.getSectionEnd(), ss.getCourseName()
+                                "选课时间冲突！该课程上课时间 [周%d 第%d-%d节] 与已有课表 [%s] 重合。",
+                                ps.getDayOfWeek(), ps.getSectionStart(), ps.getSectionEnd(), ss.getCourseName()
                         ));
                     }
                 }

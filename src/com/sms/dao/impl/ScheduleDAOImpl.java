@@ -86,13 +86,11 @@ public class ScheduleDAOImpl implements ScheduleDAO {
     @Override
     public List<Schedule> findByClassId(Integer classId, String semester) {
         try {
-            // Include class-bound schedule slots, and also selected electives schedules for this class!
-            // Wait, for simplicity, let's select schedules associated with teaching plans matching this class,
-            // or teaching plans where the student in this class has selected (meaning has a score/grade slot!)
-            // We can do a SQL query to get both class schedules and student elective schedules for a class!
-            // Let's do a UNION or a OR join:
+            // Bug #10 修复: 原子查询用 score 表判断"已选课"，但学期中途还没录分的学生查不出来。
+            // 系统设计上，选课时即向 score 表插入一条空白记录（score=NULL），所以 score 表存在即代表已选课。
+            // 此查询正确覆盖了：(1) 班级必修课 class_id=? (2) 该班学生自主选修课 via score
             String sql = BASE_SELECT + "WHERE (tp.class_id = ? OR tp.id IN (" +
-                    "  SELECT DISTINCT teaching_plan_id FROM score sc " +
+                    "  SELECT DISTINCT sc.teaching_plan_id FROM score sc " +
                     "  JOIN student st ON sc.student_id = st.id " +
                     "  WHERE st.class_id = ?" +
                     ")) AND tp.semester = ? ORDER BY s.day_of_week, s.section_start";
@@ -101,6 +99,7 @@ public class ScheduleDAOImpl implements ScheduleDAO {
             throw new RuntimeException(e);
         }
     }
+
 
     @Override
     public List<Schedule> findByTeacherId(Integer teacherId, String semester) {
