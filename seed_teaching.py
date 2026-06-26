@@ -7,7 +7,7 @@ from backend.database import Base
 from backend.models import Staff
 from backend.models.teaching import Question, ExamPaper, Resource
 
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/student_manager")
+engine = create_engine("mysql+pymysql://root:3274594297@localhost:3306/student_manager")
 print("Creating teaching tables if they don't exist...")
 Base.metadata.create_all(bind=engine)
 
