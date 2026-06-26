@@ -30,6 +30,18 @@ export function batchUpdateSchedule(classId: number, items: Array<{ day_of_week:
   return http.put("/schedule/batch", { class_id: classId, items })
 }
 
+export function getAdminScheduleOverview() {
+  return http.get("/schedule/admin/overview")
+}
+
+export function getAdminStatistics() {
+  return http.get("/schedule/admin/statistics")
+}
+
+export function getAdminConflicts() {
+  return http.get("/schedule/admin/conflicts")
+}
+
 // 教师端 API
 export function getExams(classId?: number) {
   const params = classId ? { class_id: classId } : {}

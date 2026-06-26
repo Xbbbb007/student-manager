@@ -329,46 +329,73 @@ onMounted(() => {
 .stats-overview {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: 32px;
 }
 .stat-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 16px 20px;
+  border-radius: 16px;
+  padding: 20px 22px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(8,31,92,0.04), 0 0 0 1px rgba(8,31,92,0.02);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 0 0 4px 4px;
 }
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(8,31,92,0.1), 0 0 0 1px rgba(51,78,172,0.08);
 }
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: rgba(51, 78, 172, 0.1);
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(51,78,172,0.1), rgba(51,78,172,0.04));
   color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 23px;
+  transition: transform 0.3s;
+  box-shadow: 0 4px 12px rgba(51,78,172,0.08);
 }
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-3deg); }
 .stat-card.pending .stat-icon {
-  background: rgba(232, 168, 56, 0.1);
+  background: linear-gradient(135deg, rgba(232,168,56,0.12), rgba(245,158,11,0.04));
   color: var(--color-warning);
+  box-shadow: 0 4px 12px rgba(232,168,56,0.1);
+}
+.stat-card.pending::before {
+  background: linear-gradient(90deg, #E8A838, #F59E0B, #FBBF24);
 }
 .stat-card.submitted .stat-icon {
-  background: rgba(16, 185, 129, 0.1);
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(52,211,153,0.04));
   color: var(--color-success);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.1);
+}
+.stat-card.submitted::before {
+  background: linear-gradient(90deg, #10B981, #34D399, #6EE7B7);
 }
 .stat-card.graded .stat-icon {
-  background: rgba(110, 86, 219, 0.1);
+  background: linear-gradient(135deg, rgba(110,86,219,0.12), rgba(167,139,250,0.04));
   color: #6e56db;
+  box-shadow: 0 4px 12px rgba(110,86,219,0.1);
+}
+.stat-card.graded::before {
+  background: linear-gradient(90deg, #6e56db, #a78bfa, #c4b5fd);
 }
 .stat-info {
   display: flex;
@@ -378,63 +405,82 @@ onMounted(() => {
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-bottom: 4px;
+  font-weight: 500;
 }
 .stat-value {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--color-text);
+  letter-spacing: -0.5px;
 }
 
 /* --- 过滤器控制栏 --- */
 .filter-bar {
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--color-border-light);
-  padding-bottom: 12px;
+  margin-bottom: 28px;
 }
 .custom-tabs {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+  padding: 4px;
+  border-radius: 14px;
+  gap: 4px;
 }
 .tab-item {
   background: transparent;
   border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 9px 22px;
+  border-radius: 11px;
   font-size: 13px;
   font-weight: 600;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .tab-item:hover {
   color: var(--color-primary);
-  background: var(--color-border-light);
+  background: rgba(255,255,255,0.5);
 }
 .tab-item.active {
-  background: var(--color-primary);
-  color: #ffffff;
+  background: #FFFFFF;
+  color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(51,78,172,0.12), 0 0 0 1px rgba(51,78,172,0.06);
 }
 
 /* --- 作业列表 Grid --- */
 .homework-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: 22px;
 }
 .hw-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 22px 22px 22px 28px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-sm);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(8,31,92,0.04);
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
+.hw-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  border-radius: 5px 0 0 5px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+  opacity: 0.7;
+  transition: opacity 0.3s, width 0.3s;
+}
+.hw-card:hover::after { opacity: 1; width: 6px; }
 .hw-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(8,31,92,0.1), 0 0 0 1px rgba(51,78,172,0.06);
   border-color: var(--color-primary-light);
 }
 .hw-card-header {
@@ -446,26 +492,26 @@ onMounted(() => {
 .subject-tag {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 12px;
   border-radius: 12px;
   letter-spacing: 0.5px;
 }
 .status-badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 12px;
   border-radius: 12px;
 }
 .status-badge.unsubmitted {
-  background: rgba(239, 68, 68, 0.1);
+  background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.06));
   color: var(--color-danger);
 }
 .status-badge.submitted {
-  background: rgba(232, 168, 56, 0.1);
+  background: linear-gradient(135deg, rgba(232,168,56,0.1), rgba(251,191,36,0.06));
   color: var(--color-warning);
 }
 .status-badge.graded {
-  background: rgba(16, 185, 129, 0.1);
+  background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.06));
   color: var(--color-success);
 }
 .hw-title {
@@ -493,7 +539,7 @@ onMounted(() => {
   font-size: 12px;
   color: var(--color-text-light);
   border-top: 1px solid rgba(0, 0, 0, 0.04);
-  padding-top: 12px;
+  padding-top: 14px;
 }
 .meta-item {
   display: flex;
@@ -508,33 +554,33 @@ onMounted(() => {
 .empty-state {
   padding: 60px 0;
   background: var(--color-bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid var(--color-border-light);
 }
 
 /* --- 详情对话框 --- */
 .custom-dialog :deep(.el-dialog) {
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--color-bg-content);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 24px 80px rgba(8,31,92,0.14), 0 0 0 1px rgba(8,31,92,0.04);
 }
 .custom-dialog :deep(.el-dialog__header) {
-  padding-bottom: 12px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--color-border-light);
 }
 .custom-dialog :deep(.el-dialog__body) {
-  padding: 24px;
+  padding: 28px;
 }
 .hw-dialog-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
 }
 .hw-details-header h2 {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--color-primary);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .hw-meta-grid {
   display: flex;
@@ -561,30 +607,30 @@ onMounted(() => {
   font-weight: 700;
   color: var(--color-text);
   position: relative;
-  padding-left: 8px;
+  padding-left: 12px;
 }
 .section-title::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 3px;
-  width: 3px;
-  height: 12px;
-  background: var(--color-primary);
-  border-radius: 2px;
+  top: 2px;
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 3px;
 }
 .section-box {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 18px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--color-text);
   white-space: pre-wrap;
 }
 .description-box {
-  background: rgba(255, 249, 240, 0.5);
+  background: linear-gradient(135deg, rgba(255,249,240,0.6), rgba(255,251,235,0.4));
 }
 .submission-box {
   background: #ffffff;
@@ -602,12 +648,12 @@ onMounted(() => {
   gap: 12px;
 }
 .submission-edit :deep(.el-textarea__inner) {
-  border-radius: 8px;
+  border-radius: 12px;
   border-color: var(--color-border);
 }
 .submission-edit :deep(.el-textarea__inner:focus) {
   border-color: var(--color-primary-light);
-  box-shadow: 0 0 0 2px rgba(51, 78, 172, 0.1);
+  box-shadow: 0 0 0 4px rgba(51, 78, 172, 0.08);
 }
 .edit-footer {
   display: flex;
@@ -622,11 +668,11 @@ onMounted(() => {
 /* 批改结果反馈 */
 .feedback-section {
   border-top: 1px dashed var(--color-border);
-  padding-top: 20px;
+  padding-top: 22px;
 }
 .feedback-grid {
   display: flex;
-  gap: 20px;
+  gap: 22px;
   align-items: stretch;
 }
 .score-display {
@@ -636,8 +682,8 @@ onMounted(() => {
   justify-content: center;
 }
 .score-circle {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   border: 3px double var(--color-success);
   display: flex;
@@ -645,24 +691,25 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--color-success);
-  background: rgba(16, 185, 129, 0.05);
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(52,211,153,0.03));
+  box-shadow: 0 6px 24px rgba(16,185,129,0.15), inset 0 2px 8px rgba(16,185,129,0.06);
 }
 .score-val {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 900;
   line-height: 1;
 }
 .score-lbl {
   font-size: 10px;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 .feedback-box {
   flex: 1;
-  background: rgba(16, 185, 129, 0.03);
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  border-radius: 8px;
-  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.04), rgba(52,211,153,0.02));
+  border: 1px solid rgba(16, 185, 129, 0.12);
+  border-radius: 12px;
+  padding: 18px 20px;
 }
 .teacher-title {
   font-size: 13px;
@@ -673,7 +720,32 @@ onMounted(() => {
 .feedback-text {
   font-size: 13px;
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  line-height: 1.7;
+}
+
+/* 入场动画 */
+.hw-card {
+  animation: cardFadeIn 0.4s ease both;
+}
+.hw-card:nth-child(2) { animation-delay: 0.06s; }
+.hw-card:nth-child(3) { animation-delay: 0.12s; }
+.hw-card:nth-child(4) { animation-delay: 0.18s; }
+.hw-card:nth-child(5) { animation-delay: 0.24s; }
+.hw-card:nth-child(6) { animation-delay: 0.3s; }
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card {
+  animation: statPop 0.4s ease both;
+}
+.stat-card:nth-child(2) { animation-delay: 0.05s; }
+.stat-card:nth-child(3) { animation-delay: 0.1s; }
+.stat-card:nth-child(4) { animation-delay: 0.15s; }
+@keyframes statPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @media (max-width: 768px) {

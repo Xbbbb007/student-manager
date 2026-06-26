@@ -1,7 +1,9 @@
 """课表管理路由"""
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import Optional, List
+from collections import defaultdict
 
 from ..database import get_db
 from ..models.schedule import Schedule
@@ -16,7 +18,7 @@ from ..core.security import decode_access_token
 SUBJECT_MAP = {
     "chinese": "语文", "math": "数学", "english": "英语",
     "science": "科学", "ethics": "道德与法治", "pe": "体育",
-    "music": "音乐", "art": "美术", "it": "信息科技", "self_study": "自习",
+    "music": "音乐", "art": "美术", "it": "信息科技", "self-study": "自习",
 }
 
 router = APIRouter(prefix="/api/v1/schedule", tags=["课表管理"])
@@ -160,14 +162,20 @@ def batch_update_schedule(
     current_user: Staff = Depends(get_current_staff),
     db: Session = Depends(get_db),
 ):
-    """管理端/班主任：批量更新课表（先删后插）"""
-    if current_user.role != StaffRole.ADMIN:
-        raise HTTPException(403, detail="仅管理员可批量修改课表")
-
+    """管理端/班主任/科任老师：批量更新课表（先删后插）"""
     class_id = body.get("class_id")
     items = body.get("items", [])
     if not class_id:
         raise HTTPException(400, detail="缺少 class_id")
+
+    # 管理员可以改任何班，教师只能改自己教的班
+    if current_user.role != StaffRole.ADMIN:
+        teaches = db.query(Schedule).filter(
+            Schedule.class_id == class_id,
+            Schedule.teacher_id == current_user.id,
+        ).first()
+        if not teaches:
+            raise HTTPException(403, detail="您不教该班级，无法修改课表")
 
     # 删除该班旧课表
     db.query(Schedule).filter(Schedule.class_id == class_id).delete()
@@ -185,3 +193,105 @@ def batch_update_schedule(
 
     db.commit()
     return ApiResponse(message="课表更新成功")
+
+
+@router.get("/admin/overview")
+def admin_schedule_overview(
+    current_user: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+):
+    """管理端：全校课表概览 — 返回所有班级的课表摘要"""
+    if current_user.role != StaffRole.ADMIN:
+        raise HTTPException(403, detail="仅管理员可查看全校课表")
+
+    classes = db.query(Class).order_by(Class.section, Class.grade, Class.name).all()
+    result = []
+    for cls in classes:
+        schedules = db.query(Schedule).filter(Schedule.class_id == cls.id).all()
+        periods_count = len(schedules)
+        subjects = list(set(s.subject for s in schedules))
+        teacher_ids = list(set(s.teacher_id for s in schedules if s.teacher_id))
+        result.append({
+            "class_id": cls.id,
+            "class_name": cls.name,
+            "section": cls.section,
+            "grade": cls.grade,
+            "periods_count": periods_count,
+            "subjects": [SUBJECT_MAP.get(s, s) for s in subjects],
+            "teacher_count": len(teacher_ids),
+        })
+    return ApiResponse(data=result)
+
+
+@router.get("/admin/statistics")
+def admin_class_hours_statistics(
+    current_user: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+):
+    """管理端：课时统计 — 每位教师每周课时量"""
+    if current_user.role != StaffRole.ADMIN:
+        raise HTTPException(403, detail="仅管理员可查看课时统计")
+
+    # 按 teacher_id 分组统计
+    rows = (
+        db.query(Schedule.teacher_id, func.count(Schedule.id).label("hours"))
+        .filter(Schedule.teacher_id.isnot(None))
+        .group_by(Schedule.teacher_id)
+        .all()
+    )
+    result = []
+    for row in rows:
+        teacher = db.query(Staff).filter(Staff.id == row.teacher_id).first()
+        if teacher:
+            result.append({
+                "teacher_id": row.teacher_id,
+                "teacher_name": teacher.name,
+                "subject": teacher.subject.value if teacher.subject else "",
+                "weekly_hours": row.hours,
+            })
+    result.sort(key=lambda x: x["weekly_hours"], reverse=True)
+    return ApiResponse(data=result)
+
+
+@router.get("/admin/conflicts")
+def admin_detect_conflicts(
+    current_user: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+):
+    """管理端：冲突检测 — 教师同一时间段被安排了多节课"""
+    if current_user.role != StaffRole.ADMIN:
+        raise HTTPException(403, detail="仅管理员可检测冲突")
+
+    # 找出所有教师的课表，按 (teacher_id, day_of_week, period) 分组
+    all_schedules = (
+        db.query(Schedule)
+        .filter(Schedule.teacher_id.isnot(None))
+        .order_by(Schedule.teacher_id, Schedule.day_of_week, Schedule.period)
+        .all()
+    )
+
+    # 按 (teacher_id, day, period) 分组
+    groups: dict = defaultdict(list)
+    for s in all_schedules:
+        key = (s.teacher_id, s.day_of_week, s.period)
+        groups[key].append(s)
+
+    conflicts = []
+    day_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五"}
+    for (tid, day, period), items in groups.items():
+        if len(items) > 1:
+            teacher = db.query(Staff).filter(Staff.id == tid).first()
+            class_names = []
+            for item in items:
+                cls = db.query(Class).filter(Class.id == item.class_id).first()
+                class_names.append(cls.name if cls else f"班级{item.class_id}")
+            conflicts.append({
+                "teacher_id": tid,
+                "teacher_name": teacher.name if teacher else "",
+                "day_of_week": day,
+                "day_name": day_names.get(day, ""),
+                "period": period,
+                "classes": class_names,
+                "description": f"{teacher.name if teacher else ''} 在{day_names.get(day, '')}第{period}节同时被安排了 {', '.join(class_names)} 的课",
+            })
+    return ApiResponse(data=conflicts)

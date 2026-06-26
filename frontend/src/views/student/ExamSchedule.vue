@@ -264,46 +264,79 @@ onMounted(() => {
   width: 100%;
 }
 
-/* 看板 */
+/* === 看板 === */
 .exam-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 .estat-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 16px 20px;
+  border-radius: 16px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s;
+  gap: 18px;
+  box-shadow: 0 2px 8px rgba(8,31,92,0.04), 0 0 0 1px rgba(8,31,92,0.02);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: statPop 0.4s ease both;
+}
+.estat-card:nth-child(2) { animation-delay: 0.06s; }
+.estat-card:nth-child(3) { animation-delay: 0.12s; }
+@keyframes statPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.estat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 0 0 4px 4px;
 }
 .estat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(8,31,92,0.1), 0 0 0 1px rgba(51,78,172,0.08);
 }
 .estat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: rgba(51, 78, 172, 0.1);
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(51,78,172,0.1), rgba(51,78,172,0.04));
   color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 24px;
+  transition: transform 0.3s;
+  box-shadow: 0 4px 12px rgba(51,78,172,0.08);
+}
+.estat-card:hover .estat-icon { transform: scale(1.1) rotate(-3deg); }
+.estat-card.upcoming::before {
+  background: linear-gradient(90deg, var(--color-primary), #6B8DD6, #93B4F5);
 }
 .estat-card.active .estat-icon {
-  background: rgba(232, 168, 56, 0.1);
+  background: linear-gradient(135deg, rgba(232,168,56,0.12), rgba(245,158,11,0.04));
   color: var(--color-warning);
+  box-shadow: 0 4px 12px rgba(232,168,56,0.1);
+}
+.estat-card.active::before {
+  background: linear-gradient(90deg, var(--color-warning), #F59E0B, #FBBF24);
 }
 .estat-card.completed .estat-icon {
-  background: rgba(16, 185, 129, 0.1);
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(52,211,153,0.04));
   color: var(--color-success);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.1);
+}
+.estat-card.completed::before {
+  background: linear-gradient(90deg, var(--color-success), #34D399, #6EE7B7);
 }
 .estat-info {
   display: flex;
@@ -313,11 +346,13 @@ onMounted(() => {
   font-size: 12px;
   color: var(--color-text-secondary);
   margin-bottom: 4px;
+  font-weight: 500;
 }
 .estat-value {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   color: var(--color-text);
+  letter-spacing: -0.5px;
 }
 .estat-value small {
   font-size: 12px;
@@ -325,10 +360,10 @@ onMounted(() => {
   color: var(--color-text-secondary);
 }
 
-/* Pulsing effect for active exams */
+/* Pulsing */
 @keyframes pulse {
   0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
+  50% { transform: scale(1.06); opacity: 0.75; }
   100% { transform: scale(1); opacity: 1; }
 }
 .pulsing {
@@ -336,7 +371,7 @@ onMounted(() => {
   animation: pulse 2s infinite ease-in-out;
 }
 
-/* 时间轴 */
+/* === 时间轴 === */
 .timeline-wrapper {
   padding: 10px 0;
 }
@@ -352,17 +387,26 @@ onMounted(() => {
   left: 29px;
   top: 10px;
   bottom: 10px;
-  width: 2px;
-  background: var(--color-border-light);
+  width: 3px;
+  background: linear-gradient(180deg, rgba(51,78,172,0.2), rgba(16,185,129,0.25), rgba(232,168,56,0.15));
+  border-radius: 3px;
 }
 
 .timeline-item {
   display: flex;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   position: relative;
+  animation: timelineSlideIn 0.45s ease both;
 }
-.timeline-item:last-child {
-  margin-bottom: 0;
+.timeline-item:nth-child(2) { animation-delay: 0.08s; }
+.timeline-item:nth-child(3) { animation-delay: 0.16s; }
+.timeline-item:nth-child(4) { animation-delay: 0.24s; }
+.timeline-item:nth-child(5) { animation-delay: 0.32s; }
+.timeline-item:last-child { margin-bottom: 0; }
+
+@keyframes timelineSlideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .timeline-line-indicator {
@@ -373,70 +417,100 @@ onMounted(() => {
   margin-right: 15px;
   position: relative;
   z-index: 2;
-  margin-top: 18px;
+  margin-top: 22px;
 }
 
 .node-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--color-border);
-  border: 2px solid #ffffff;
+  border: 3px solid #ffffff;
   transition: all 0.3s;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
 }
 
 .timeline-item.未开始 .node-dot {
-  background: var(--color-primary-light);
+  background: linear-gradient(135deg, var(--color-primary), #6B8DD6);
+  box-shadow: 0 0 0 4px rgba(51,78,172,0.15), 0 2px 8px rgba(51,78,172,0.2);
 }
 .timeline-item.进行中 .node-dot {
-  background: var(--color-warning);
-  box-shadow: 0 0 0 4px rgba(232, 168, 56, 0.2);
+  background: linear-gradient(135deg, var(--color-warning), #FBBF24);
+  box-shadow: 0 0 0 5px rgba(232,168,56,0.18), 0 0 16px rgba(232,168,56,0.3);
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(232,168,56,0.18), 0 0 16px rgba(232,168,56,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(232,168,56,0.1), 0 0 24px rgba(232,168,56,0.2); }
 }
 .timeline-item.已结束 .node-dot {
-  background: var(--color-success);
+  background: linear-gradient(135deg, var(--color-success), #34D399);
+  box-shadow: 0 0 0 4px rgba(16,185,129,0.15), 0 2px 8px rgba(16,185,129,0.2);
 }
 
-/* 卡片内容 */
+/* === 卡片内容 === */
 .timeline-content-card {
   flex: 1;
   background: var(--color-bg-card);
   border: 1px solid var(--color-border-light);
-  border-radius: 12px;
-  padding: 18px 24px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s;
+  border-radius: 16px;
+  padding: 22px 28px;
+  box-shadow: 0 3px 12px rgba(8,31,92,0.04);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
+.timeline-content-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  border-radius: 5px 0 0 5px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+  opacity: 0.6;
+  transition: opacity 0.3s, width 0.3s;
+}
+.timeline-content-card:hover::after { opacity: 1; width: 6px; }
 .timeline-content-card:hover {
-  transform: translateX(4px);
-  box-shadow: var(--shadow-md);
+  transform: translateX(8px);
+  box-shadow: 0 14px 36px rgba(8,31,92,0.1);
   border-color: var(--color-primary-light);
+}
+
+.timeline-item.进行中 .timeline-content-card::after {
+  background: linear-gradient(180deg, var(--color-warning), #FBBF24);
+}
+.timeline-item.已结束 .timeline-content-card::after {
+  background: linear-gradient(180deg, var(--color-success), #34D399);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 .card-header .status-badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 12px;
   border-radius: 12px;
 }
 .status-badge.未开始 {
-  background: rgba(51, 78, 172, 0.08);
+  background: linear-gradient(135deg, rgba(51,78,172,0.1), rgba(107,141,214,0.06));
   color: var(--color-primary);
 }
 .status-badge.进行中 {
-  background: rgba(232, 168, 56, 0.12);
+  background: linear-gradient(135deg, rgba(232,168,56,0.12), rgba(251,191,36,0.06));
   color: var(--color-warning);
 }
 .status-badge.el-dialog {
   z-index: 20000 !important;
 }
 .status-badge.已结束 {
-  background: rgba(16, 185, 129, 0.1);
+  background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.06));
   color: var(--color-success);
 }
 
@@ -448,7 +522,7 @@ onMounted(() => {
 .subject-tag {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 12px;
   border-radius: 12px;
   letter-spacing: 0.5px;
 }
@@ -459,10 +533,10 @@ onMounted(() => {
 }
 
 .exam-name {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .exam-meta-details {
@@ -471,8 +545,8 @@ onMounted(() => {
   gap: 8px;
   font-size: 13px;
   color: var(--color-text-secondary);
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.04);
-  padding-bottom: 14px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.05);
+  padding-bottom: 16px;
 }
 .meta-row {
   display: flex;
@@ -480,22 +554,27 @@ onMounted(() => {
   gap: 8px;
 }
 
-/* 得分结果 */
+/* === 得分结果 === */
 .card-status-info {
-  margin-top: 14px;
+  margin-top: 16px;
   font-size: 13px;
 }
 .graded-score-box {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 .graded-score-box .lbl {
   color: var(--color-text-secondary);
+  font-weight: 500;
 }
 .graded-score-box .val {
-  font-size: 16px;
-  color: var(--color-success);
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--color-success), #34D399, #6EE7B7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .pending-lbl {
   color: var(--color-warning);
@@ -506,7 +585,7 @@ onMounted(() => {
 }
 
 .card-actions {
-  margin-top: 14px;
+  margin-top: 18px;
   display: flex;
   justify-content: flex-end;
 }
@@ -514,57 +593,87 @@ onMounted(() => {
 .empty-state {
   padding: 60px 0;
   background: var(--color-bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid var(--color-border-light);
 }
 
-/* Dialog */
+/* === Dialog === */
 .custom-dialog :deep(.el-dialog) {
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
+  border-radius: 18px;
+  background: var(--color-bg-content);
+  box-shadow: 0 24px 80px rgba(8,31,92,0.14), 0 0 0 1px rgba(8,31,92,0.04);
+}
+.custom-dialog :deep(.el-dialog__header) {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.custom-dialog :deep(.el-dialog__body) {
+  padding: 28px;
 }
 .test-dialog-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 .test-instruction {
-  background: rgba(8, 31, 92, 0.02);
+  background: linear-gradient(135deg, rgba(8,31,92,0.025), rgba(51,78,172,0.015));
   border: 1px solid var(--color-border-light);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 16px 18px;
   font-size: 13px;
   color: var(--color-text);
+  line-height: 1.7;
 }
 .answers-area {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .answers-area .lbl {
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text);
+  position: relative;
+  padding-left: 12px;
+}
+.answers-area .lbl::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 4px;
+  height: 14px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 3px;
+}
+.answers-area :deep(.el-textarea__inner) {
+  border-radius: 12px;
+  border-color: var(--color-border);
+}
+.answers-area :deep(.el-textarea__inner:focus) {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 4px rgba(51, 78, 172, 0.08);
 }
 .score-report {
-  margin-top: 10px;
+  margin-top: 14px;
   display: flex;
   justify-content: center;
 }
 .score-circle {
-  width: 90px;
-  height: 90px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   border: 3px double var(--color-success);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(16, 185, 129, 0.05);
+  background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(52,211,153,0.03));
   color: var(--color-success);
+  box-shadow: 0 8px 28px rgba(16,185,129,0.15), inset 0 2px 8px rgba(16,185,129,0.06);
 }
 .score-circle .num {
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 900;
   line-height: 1;
 }
@@ -577,5 +686,9 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .exam-stats { grid-template-columns: 1fr; }
 }
 </style>

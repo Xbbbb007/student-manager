@@ -69,3 +69,5 @@ export function autoGradeTest(scheduleId: number) {
   return http.post(`/exams-schedule/auto-grade/${scheduleId}`)
 }
 
+// Re-export for teacher module convenience
+export { getHomeworkSubmissions } from "./homework"

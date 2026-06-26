@@ -93,9 +93,9 @@ onMounted(async () => {
 
       <!-- 仅在日视图下呈现星期 Tabs -->
       <div v-if="viewMode === 'day'" class="day-tabs">
-        <span 
-          v-for="(dayName, idx) in days" 
-          :key="idx" 
+        <span
+          v-for="(dayName, idx) in days"
+          :key="idx"
           :class="['day-tab-item', { active: selectedDay === idx + 1 }]"
           @click="selectedDay = idx + 1"
         >
@@ -108,9 +108,9 @@ onMounted(async () => {
     <div v-if="viewMode === 'week'" class="schedule-grid animate-fade">
       <div class="grid-header">
         <div class="th-time"></div>
-        <div 
-          v-for="(d, i) in days" 
-          :key="i" 
+        <div
+          v-for="(d, i) in days"
+          :key="i"
           :class="['th-day', { 'today': (i + 1) === getTodayDay() }]"
         >
           {{ d }}
@@ -167,150 +167,254 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.schedule-page { padding: 0; }
+.schedule-page {
+  padding: 0;
+}
+
+/* ====== 控制条 ====== */
 .schedule-ctrls {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
+.schedule-ctrls :deep(.el-radio-group) {
+  background: #F3F4F6;
+  padding: 4px;
+  border-radius: 12px;
+}
+.schedule-ctrls :deep(.el-radio-button__inner) {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 10px !important;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 22px;
+  box-shadow: none !important;
+  color: #6B7280;
+  transition: all 0.25s;
+}
+.schedule-ctrls :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: #FFFFFF !important;
+  color: #334EAC !important;
+  box-shadow: 0 2px 8px rgba(51,78,172,0.12) !important;
+}
+
 .day-tabs {
   display: flex;
   background: #F3F4F6;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: 12px;
+  gap: 2px;
 }
 .day-tab-item {
-  padding: 6px 16px;
+  padding: 7px 18px;
   font-size: 13px;
   font-weight: 600;
-  color: #4B5563;
+  color: #6B7280;
   cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
+  border-radius: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .day-tab-item:hover {
-  color: #1F2937;
+  color: #334EAC;
 }
 .day-tab-item.active {
   background: #FFFFFF;
   color: #334EAC;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(51,78,172,0.12);
 }
 
-/* 周视图样式 */
+/* ====== 周视图 ====== */
 .schedule-grid {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 20px rgba(8,31,92,0.06);
 }
 .grid-header {
   display: grid;
   grid-template-columns: 80px repeat(5, 1fr);
-  border-bottom: 2px solid #E5E7EB;
-  background: #F9F9F9;
-}
-.th-time { padding: 12px 8px; }
-.th-day {
-  padding: 12px 8px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6B7280;
-}
-.th-day.today {
-  color: #334EAC;
-  font-weight: 700;
+  border-bottom: none;
+  background: linear-gradient(135deg, #334EAC 0%, #5B74C9 50%, #7B93DB 100%);
   position: relative;
 }
+.th-time { padding: 14px 8px; }
+.th-day {
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 0.5px;
+  position: relative;
+}
+.th-day.today {
+  color: #FFFFFF;
+}
 .th-day.today::after {
-  content: "";
+  content: "今天";
   position: absolute;
-  bottom: 0;
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 24px;
-  height: 3px;
-  background: #334EAC;
-  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.25);
+  color: #FFFFFF;
+  padding: 1px 8px;
+  border-radius: 8px;
+  letter-spacing: 1px;
 }
+
 .grid-row {
   display: grid;
   grid-template-columns: 80px repeat(5, 1fr);
   border-bottom: 1px solid #F3F4F6;
-  min-height: 72px;
+  min-height: 76px;
+  transition: background 0.2s;
 }
 .grid-row:last-child { border-bottom: none; }
+.grid-row:hover { background: rgba(51,78,172,0.015); }
+
 .td-time {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 8px 4px;
-  border-right: 1px solid #F3F4F6;
-  background: #FAFBFC;
+  border-right: 1px solid #F0F0F0;
+  background: linear-gradient(180deg, #FAFBFC, #F5F6F8);
 }
-.period-num { font-size: 14px; font-weight: 700; color: #1F2937; }
-.period-time { font-size: 10px; color: #9CA3AF; margin-top: 2px; }
-.td-cell { padding: 4px; display: flex; align-items: stretch; }
+.period-num {
+  font-size: 15px;
+  font-weight: 800;
+  color: #334EAC;
+  background: linear-gradient(135deg, #334EAC, #5B74C9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.period-time {
+  font-size: 10px;
+  color: #9CA3AF;
+  margin-top: 3px;
+  font-weight: 500;
+}
+.td-cell {
+  padding: 5px;
+  display: flex;
+  align-items: stretch;
+}
+
 .course-block {
   flex: 1;
-  border-radius: 4px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.course-block::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  background: currentColor;
+  opacity: 0.4;
 }
 .course-block:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  border-color: rgba(0,0,0,0.06);
 }
-.course-name { font-size: 14px; font-weight: 700; line-height: 1.2; }
-.course-teacher { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+.course-name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.course-teacher {
+  font-size: 11px;
+  opacity: 0.75;
+  margin-top: 3px;
+  font-weight: 500;
+}
 
-/* Timeline 日视图样式 */
+/* ====== Timeline 日视图 ====== */
 .day-timeline-view {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 30px 40px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 14px;
+  padding: 36px 48px;
+  box-shadow: 0 4px 20px rgba(8,31,92,0.06);
 }
 .timeline-container {
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto;
 }
+
+/* 自定义 el-timeline 样式 */
+.day-timeline-view :deep(.el-timeline-item__wrapper) {
+  padding-left: 28px;
+}
+.day-timeline-view :deep(.el-timeline-item__tail) {
+  border-left: 2px solid transparent;
+  background: linear-gradient(180deg, rgba(51,78,172,0.15), rgba(16,185,129,0.15));
+  border-radius: 2px;
+  width: 2px;
+  left: 0;
+}
+.day-timeline-view :deep(.el-timeline-item__node) {
+  width: 14px;
+  height: 14px;
+  left: -6px;
+  box-shadow: 0 0 0 4px rgba(51,78,172,0.1);
+}
+.day-timeline-view :deep(.el-timeline-item__timestamp) {
+  font-weight: 700;
+  font-size: 12px;
+  color: #334EAC;
+}
+
 .timeline-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 16px 22px;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.04);
 }
 .timeline-card:hover {
-  transform: translateX(2px);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transform: translateX(6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 .card-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 .period-tag {
   font-size: 11px;
   font-weight: 700;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 10px;
   letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 .subject-title {
   font-size: 16px;
@@ -318,21 +422,31 @@ onMounted(async () => {
 }
 .card-right {
   font-size: 13px;
-  color: #4B5563;
+  color: #6B7280;
 }
 .teacher-info strong {
   color: #1F2937;
+  font-weight: 700;
 }
 .no-courses {
   padding: 40px 0;
 }
 
-/* 动效 */
+/* ====== 动效 ====== */
 .animate-fade {
-  animation: fadeIn 0.35s ease;
+  animation: fadeIn 0.4s ease;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 课程块交错入场 */
+.course-block {
+  animation: blockPop 0.35s ease both;
+}
+@keyframes blockPop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
 }
 </style>
