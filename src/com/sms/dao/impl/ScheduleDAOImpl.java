@@ -90,8 +90,9 @@ public class ScheduleDAOImpl implements ScheduleDAO {
             // 系统设计上，选课时即向 score 表插入一条空白记录（score=NULL），所以 score 表存在即代表已选课。
             // 此查询正确覆盖了：(1) 班级必修课 class_id=? (2) 该班学生自主选修课 via score
             String sql = BASE_SELECT + "WHERE (tp.class_id = ? OR tp.id IN (" +
-                    "  SELECT DISTINCT sc.teaching_plan_id FROM score sc " +
-                    "  JOIN student st ON sc.student_id = st.id " +
+                    "  SELECT DISTINCT e.teaching_plan_id FROM score sc " +
+                    "  JOIN enrollment e ON sc.enrollment_id = e.id " +
+                    "  JOIN student st ON e.student_id = st.id " +
                     "  WHERE st.class_id = ?" +
                     ")) AND tp.semester = ? ORDER BY s.day_of_week, s.section_start";
             return DBUtil.executeQuery(sql, mapper, classId, classId, semester);
