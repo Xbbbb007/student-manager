@@ -1,6 +1,6 @@
 -- Create database if not exists
-CREATE DATABASE IF NOT EXISTS student_manager DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE student_manager;
+CREATE DATABASE IF NOT EXISTS student_manager_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE student_manager_db;
 
 -- Drop tables in correct order if they exist
 DROP TABLE IF EXISTS leave_request;
