@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { ElMessage } from "element-plus";
 import { getHomeworkOverview } from "../../api/homework";
 import { getTeacherClasses } from "../../api/scores";
-import { Warning, TrendCharts, Checked, DataAnalysis } from "@element-plus/icons-vue";
+import { Warning, TrendCharts, Checked } from "@element-plus/icons-vue";
 
 interface HomeworkOverviewItem {
   homework_id: number;

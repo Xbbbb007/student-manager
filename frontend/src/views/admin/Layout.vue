@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
@@ -14,11 +14,7 @@ const navListRef = ref<HTMLElement | null>(null)
 interface NavItem { label: string; route: string }
 const navItems = ref<NavItem[]>([
   { label: '用户管理', route: '/admin/users' },
-  { label: '教务', route: '/admin/edu' },
-  { label: '图书', route: '/admin/books' },
-  { label: '后勤', route: '/admin/logistics' },
-  { label: '数据', route: '/admin/data' },
-  { label: '设置', route: '/admin/settings' }
+  { label: '教务', route: '/admin/edu' }
 ])
 const activeIndex = ref(0)
 

@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { getAdminAttendanceStats } from "../../api/attendance";
-import { Checked, Warning, UserFilled, TrendCharts, Histogram } from "@element-plus/icons-vue";
+import { Warning, UserFilled, Histogram } from "@element-plus/icons-vue";
 
 interface ClassStat {
   class_id: number;

@@ -9,10 +9,9 @@ import {
   updateExamSchedule,
   deleteExamSchedule,
   autoGradeTest,
-  getHomeworkSubmissions, // wait, we have a custom test submissions list endpoint!
 } from "../../api/exam_schedule";
-import http from "../../api/http"; // let's call the test submissions directly or via helper
-import { Plus, EditPen, Delete, Checked, User, Trophy } from "@element-plus/icons-vue";
+import http from "../../api/http";
+import { Plus, EditPen, Delete, Checked, Trophy } from "@element-plus/icons-vue";
 
 const userStore = useUserStore();
 const userInfo = userStore.userInfo;
@@ -146,6 +145,7 @@ async function handleSaveSchedule() {
 
     const payload = {
       ...form.value,
+      class_id: form.value.class_id as number,
       exam_date: dateStr,
     };
 

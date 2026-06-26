@@ -45,10 +45,6 @@ export const routes: RouteRecordRaw[] = [
       { path: "", redirect: "/admin/users" },
       { path: "users", component: () => import("../views/admin/Users.vue"), meta: { title: "用户管理" } },
       { path: "edu", component: () => import("../views/admin/Edu.vue"), meta: { title: "教务" } },
-      { path: "books", component: () => import("../views/admin/Books.vue"), meta: { title: "图书" } },
-      { path: "logistics", component: () => import("../views/admin/Logistics.vue"), meta: { title: "后勤" } },
-      { path: "data", component: () => import("../views/admin/Data.vue"), meta: { title: "数据" } },
-      { path: "settings", component: () => import("../views/admin/Settings.vue"), meta: { title: "设置" } },
     ],
   },
   {

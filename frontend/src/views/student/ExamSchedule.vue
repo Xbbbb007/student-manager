@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { ElMessage } from "element-plus";
 import { getMyExamSchedules, submitTest } from "../../api/exam_schedule";
-import { Calendar, Location, Warning, Checked, Timer, Edit } from "@element-plus/icons-vue";
+import { Calendar, Location, Checked, Timer, Edit } from "@element-plus/icons-vue";
 
 interface ExamScheduleItem {
   id: number;

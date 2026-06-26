@@ -11,10 +11,13 @@ from .exam_schedule import ExamSchedule
 from .test_submission import TestSubmission
 from .mistake import Mistake
 from .attendance import Attendance, LeaveRequest
+from .teaching import Question, ExamPaper, Resource
 
 __all__ = [
     "StaffRole", "Gender", "Subject", "Staff", "Student", "Class", "Exam",
     "Score", "Schedule", "TeacherClass", "Homework", "HomeworkSubmission",
-    "ExamSchedule", "TestSubmission", "Mistake", "Attendance", "LeaveRequest"
+    "ExamSchedule", "TestSubmission", "Mistake", "Attendance", "LeaveRequest",
+    "Question", "ExamPaper", "Resource"
 ]
+
 

@@ -257,10 +257,10 @@ onMounted(() => {
               <div 
                 v-if="isMyCourse(grid[`${day}-${p.label}`])" 
                 class="course-block my-course" 
-                :style="{ background: getStyle(grid[`${day}-${p.label}`].subject).bg, color: getStyle(grid[`${day}-${p.label}`].subject).text, border: `1.5px solid ${getStyle(grid[`${day}-${p.label}`].subject).text}` }"
+                :style="{ background: getStyle(grid[`${day}-${p.label}`]?.subject || '').bg, color: getStyle(grid[`${day}-${p.label}`]?.subject || '').text, border: `1.5px solid ${getStyle(grid[`${day}-${p.label}`]?.subject || '').text}` }"
               >
-                <div class="course-name">{{ grid[`${day}-${p.label}`].subject_name }}</div>
-                <div class="course-teacher">我 ({{ grid[`${day}-${p.label}`].teacher_name }})</div>
+                <div class="course-name">{{ grid[`${day}-${p.label}`]?.subject_name }}</div>
+                <div class="course-teacher">我 ({{ grid[`${day}-${p.label}`]?.teacher_name }})</div>
               </div>
               
               <!-- 他人的课：极度置灰淡化 -->
@@ -268,8 +268,8 @@ onMounted(() => {
                 v-else 
                 class="course-block other-course"
               >
-                <div class="course-name">{{ grid[`${day}-${p.label}`].subject_name }}</div>
-                <div class="course-teacher">{{ grid[`${day}-${p.label}`].teacher_name }}</div>
+                <div class="course-name">{{ grid[`${day}-${p.label}`]?.subject_name }}</div>
+                <div class="course-teacher">{{ grid[`${day}-${p.label}`]?.teacher_name }}</div>
               </div>
             </div>
           </template>

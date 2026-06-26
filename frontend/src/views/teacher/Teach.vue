@@ -4,7 +4,9 @@ import HomeworkManage from "./HomeworkManage.vue";
 import ExamScheduleManage from "./ExamScheduleManage.vue";
 import MistakesManage from "./MistakesManage.vue";
 import AttendanceManage from "./AttendanceManage.vue";
-import { DocumentCopy, Calendar, Notebook, Checked, FolderOpened } from "@element-plus/icons-vue";
+import ExamPaperManage from "./ExamPaperManage.vue";
+import ResourceLibrary from "./ResourceLibrary.vue";
+import { DocumentCopy, Calendar, Notebook, Checked, FolderOpened, Files } from "@element-plus/icons-vue";
 
 const activeSubTab = ref("homework");
 </script>
@@ -45,6 +47,13 @@ const activeSubTab = ref("homework");
             <span>考勤管理</span>
           </li>
           <li 
+            :class="['menu-item', { active: activeSubTab === 'papers' }]"
+            @click="activeSubTab = 'papers'"
+          >
+            <el-icon><Files /></el-icon>
+            <span>出卷组卷</span>
+          </li>
+          <li 
             :class="['menu-item', { active: activeSubTab === 'resources' }]"
             @click="activeSubTab = 'resources'"
           >
@@ -61,10 +70,8 @@ const activeSubTab = ref("homework");
           <ExamScheduleManage v-else-if="activeSubTab === 'exams'" />
           <MistakesManage v-else-if="activeSubTab === 'mistakes'" />
           <AttendanceManage v-else-if="activeSubTab === 'attendance'" />
-          
-          <div v-else class="placeholder-view">
-            <el-empty description="资源共享共享资源库开发中..." />
-          </div>
+          <ExamPaperManage v-else-if="activeSubTab === 'papers'" />
+          <ResourceLibrary v-else-if="activeSubTab === 'resources'" />
         </div>
       </main>
     </div>
