@@ -9,7 +9,7 @@ from backend.database import Base
 from backend.models import Student, Class, Staff, Subject
 from backend.models.homework import Homework, HomeworkSubmission
 
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/student_manager")
+engine = create_engine("mysql+pymysql://root:3274594297@localhost:3306/student_manager")
 # Create the homework tables
 print("Creating tables if they don't exist...")
 Base.metadata.create_all(bind=engine)

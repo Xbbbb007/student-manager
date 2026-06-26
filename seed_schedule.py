@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from backend.database import Base, SessionLocal
 from backend.models import Staff, Student, Class, Schedule
 
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/student_manager")
+engine = create_engine("mysql+pymysql://root:3274594297@localhost:3306/student_manager")
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 

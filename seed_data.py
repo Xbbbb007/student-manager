@@ -19,7 +19,7 @@ hash_admin123 = hash_password("admin123")
 print("密码哈希计算完成！")
 
 # 2. 连接数据库并清除旧数据
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/student_manager")
+engine = create_engine("mysql+pymysql://root:3274594297@localhost:3306/student_manager")
 with engine.connect() as conn:
     print("清空旧数据中...")
     conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
@@ -517,7 +517,7 @@ db.commit()
 db.close()
 
 # 验证当前行数
-conn = pymysql.connect(host='localhost', user='root', password='123456', database='student_manager')
+conn = pymysql.connect(host='localhost', user='root', password='3274594297', database='student_manager')
 cur = conn.cursor()
 print("\n" + "="*50)
 print("种子数据写入成功！目前数据库内各表统计如下：")

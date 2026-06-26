@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from backend.database import Base
 from backend.models import Staff, Class, TeacherClass
 
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/student_manager")
+engine = create_engine("mysql+pymysql://root:3274594297@localhost:3306/student_manager")
 
 # 确保表已创建
 Base.metadata.create_all(bind=engine)

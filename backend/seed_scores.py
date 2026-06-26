@@ -1,7 +1,7 @@
 import random
 import pymysql
 
-conn = pymysql.connect(host='localhost', user='root', password='123456', db='student_manager')
+conn = pymysql.connect(host='localhost', user='root', password='3274594297', db='student_manager')
 cursor = conn.cursor()
 
 cursor.execute("SELECT id FROM students WHERE class_id = 1 ORDER BY id")

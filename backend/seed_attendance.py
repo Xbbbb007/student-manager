@@ -3,7 +3,7 @@ import random
 from datetime import datetime, timedelta
 
 # Connect to the local MySQL db
-conn = pymysql.connect(host='localhost', user='root', password='123456', db='student_manager')
+conn = pymysql.connect(host='localhost', user='root', password='3274594297', db='student_manager')
 cursor = conn.cursor()
 
 # Get all student IDs and their classes

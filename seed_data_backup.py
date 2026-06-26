@@ -6,7 +6,7 @@ from backend.database import Base
 from backend.models import Staff, Student, Class, StaffRole, Gender, Subject
 from backend.core.security import hash_password
 
-engine = create_engine("mysql+pymysql://root:123456@localhost:3306/student_manager")
+engine = create_engine("mysql+pymysql://root:3274594297@localhost:3306/student_manager")
 
 with engine.connect() as conn:
     conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
