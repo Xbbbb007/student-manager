@@ -1,4 +1,4 @@
-USE student_manager;
+USE student_manager_db;
 
 -- 1. user 用户表数据
 -- 密码明文：admin -> admin123, teacher -> teacher123, student -> student123
