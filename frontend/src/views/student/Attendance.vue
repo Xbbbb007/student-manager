@@ -173,7 +173,7 @@ function handleTouchStart(e: TouchEvent | MouseEvent, _id: number) {
   isDragging.value = true;
 }
 
-function handleTouchMove(e: TouchEvent | MouseEvent, _id: number) {
+function handleTouchMove(e: TouchEvent | MouseEvent, id: number) {
   if (!isDragging.value) return;
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
   touchCurrentX.value = clientX;
