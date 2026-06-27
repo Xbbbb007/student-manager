@@ -10,7 +10,7 @@ random.seed(42)
 
 conn = pymysql.connect(
     host='localhost', port=3306,
-    user='root', password='123456',
+    user='root', password='Ren2006,',
     database='student_manager', charset='utf8mb4'
 )
 cursor = conn.cursor()

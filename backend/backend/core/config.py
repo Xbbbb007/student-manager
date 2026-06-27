@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database - MySQL
-    DATABASE_URL: str = "mysql+pymysql://root:123456@localhost:3306/student_manager"
+    DATABASE_URL: str = "mysql+pymysql://root:Ren2006,@localhost:3306/student_manager"
 
     # JWT
     SECRET_KEY: str = "dev-secret-key-change-in-production"
